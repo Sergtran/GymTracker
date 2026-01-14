@@ -1884,8 +1884,11 @@
 
             function renderEditorSessions() {
                 const sel = document.getElementById('editorSessionSelector');
-                sel.innerHTML = '<option value="">-- Selecciona sesión --</option>';
                 const list = document.getElementById('editorList');
+                // Preserve previous selection to avoid losing it after re-render
+                const prevSelection = sel ? sel.value : '';
+
+                sel.innerHTML = '<option value="">-- Selecciona sesión --</option>';
                 list.innerHTML = '';
                 const daySel = document.getElementById('editorDaySelector');
                 // populate sessions for current routine
@@ -1917,7 +1920,20 @@
                     });
                 };
 
-                // initialize empty
+                // Restore previous selection if still valid
+                try {
+                    if (prevSelection !== '' && prevSelection !== null && prevSelection !== undefined) {
+                        const idx = parseInt(prevSelection);
+                        if (!isNaN(idx) && idx >= 0 && idx < routine.sessions.length) {
+                            sel.value = prevSelection;
+                            // trigger onchange to populate the list
+                            sel.onchange();
+                            return;
+                        }
+                    }
+                } catch (e) { console.error('Error restoring session selection', e); }
+
+                // initialize empty if no valid previous selection
                 sel.value = '';
             }
 
