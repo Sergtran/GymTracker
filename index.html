@@ -162,6 +162,7 @@
         .badge-pr { background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); color: #000; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; font-weight: bold; margin-left: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); vertical-align: middle; }
         .badge-match { background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%); color: #333; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; font-weight: bold; margin-left: 5px; vertical-align: middle; }
         .badge-type { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; background: var(--bg-header); border: 1px solid var(--border-color); margin-left: 5px; vertical-align: middle;}
+        .badge-laterality { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; background: #e6f7ff; border: 1px solid #b3e5ff; color: #055160; margin-left: 5px; vertical-align: middle;}
 
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 20px; }
@@ -493,6 +494,11 @@
                 <option value="weighted">➕ Peso + Lastre</option>
                 <option value="time">⏱️ Tiempo / Intervalo</option>
             </select>
+            <label style="font-size:0.9em; margin-top:8px;">Laterality:</label>
+            <select id="modalEditLaterality">
+                <option value="bilateral">Bilateral</option>
+                <option value="unilateral">Unilateral</option>
+            </select>
             
             <div style="display:flex; gap:10px; margin-top:15px;">
                 <button class="btn-secondary" onclick="window.closeEditModal()">Cancelar</button>
@@ -617,6 +623,11 @@
                 <option value="weighted">➕ Peso Corp. + Lastre (Reps + Kg Extra)</option>
                 <option value="time">⏱️ Tiempo / Intervalo</option>
             </select>
+            <label style="font-size:0.9em; opacity:0.8; margin-top:6px;">Laterality:</label>
+            <select id="exerciseLateralitySelector" style="margin-bottom: 5px;">
+                <option value="bilateral">Bilateral</option>
+                <option value="unilateral">Unilateral</option>
+            </select>
 
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="exerciseInput" list="exerciseSuggestions" placeholder="Nombre Ejercicio..." style="margin-bottom: 0;">
@@ -658,7 +669,14 @@
                 <span style="font-weight: bold; align-self:center;">Estadísticas</span>
             </div>
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
-                <select id="graphExerciseSelector"><option value="">-- Selecciona ejercicio --</option></select>
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                    <select id="graphExerciseSelector" style="flex:1;"><option value="">-- Selecciona ejercicio --</option></select>
+                    <select id="chartLateralitySelector" style="width:160px;">
+                        <option value="both">Ambos (Bilateral + Unilateral)</option>
+                        <option value="bilateral">Solo Bilateral</option>
+                        <option value="unilateral">Solo Unilateral</option>
+                    </select>
+                </div>
                 <div style="position: relative; height: 250px; width: 100%;">
                     <canvas id="progressChart"></canvas>
                 </div>
@@ -754,6 +772,8 @@
             let workoutHistory = [];
             let exerciseNotes = {}; 
             let exerciseTypes = {}; 
+            // New: track laterality ("bilateral" or "unilateral") per exercise
+            let exerciseLaterality = {};
             let activeCycle = null;
             let previousCycle = null;
             let currentRoutineIndex = -1;
@@ -861,6 +881,7 @@
                     history: workoutHistory,
                     exerciseNotes: exerciseNotes,
                     exerciseTypes: exerciseTypes, 
+                    exerciseLaterality: exerciseLaterality,
                     activeCycle: activeCycle,
                     previousCycle: previousCycle,
                     timerSettings: timerSettings,
@@ -951,6 +972,7 @@
                 workoutHistory = data.history || [];
                 exerciseNotes = data.exerciseNotes || {};
                 exerciseTypes = data.exerciseTypes || {};
+                exerciseLaterality = data.exerciseLaterality || {};
                 activeCycle = data.activeCycle || null;
                 previousCycle = data.previousCycle || null;
                 if(data.timerSettings) timerSettings = data.timerSettings;
@@ -1389,6 +1411,8 @@
                     if (d.pr === 'new') badge = '<span class="badge-pr">🏆 NEW PR</span>';
                 
                     const type = getExerciseType(d.name);
+                    const later = (exerciseLaterality[d.name] || 'bilateral');
+                    const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
                     const setsStr = d.sets.map(s => {
                         if (type === 'bw') return `${s.reps} reps`;
                         if (type === 'weighted') return `+${s.weight}kg (${s.reps})`;
@@ -1397,7 +1421,7 @@
                     }).join(", ");
 
                     html += `<li style="padding:5px 0; border:none; display:block;">
-                                <div><strong>${getTypeIcon(type)} ${d.name}</strong> ${badge}</div>
+                                <div><strong>${getTypeIcon(type)} ${d.name}</strong> ${laterBadge} ${badge}</div>
                                 <div style="font-size:0.9em; opacity:0.8;">${setsStr}</div>
                              </li>`;
                 });
@@ -1417,6 +1441,9 @@
                 Object.entries(DEFAULT_EXERCISES).forEach(([name, type]) => {
                     if (!window.exerciseTypes.hasOwnProperty(name)) {
                         window.exerciseTypes[name] = type;
+                        // Default laterality to bilateral unless previously set
+                        if (typeof window.exerciseLaterality === 'undefined') window.exerciseLaterality = {};
+                        if (!window.exerciseLaterality.hasOwnProperty(name)) window.exerciseLaterality[name] = 'bilateral';
                         addedCount++;
                     }
                 });
@@ -1437,6 +1464,10 @@
                     const type = window.exerciseTypes[val];
                     // Cambiar el selector automáticamente
                     document.getElementById("exerciseTypeSelector").value = type;
+                    // También sincronizar selector de lateralidad si existe
+                    if (window.exerciseLaterality && window.exerciseLaterality[val]) {
+                        document.getElementById("exerciseLateralitySelector").value = window.exerciseLaterality[val];
+                    }
                 }
             });
 
@@ -1473,10 +1504,13 @@
                 const pastData = [];
                 workoutHistory.forEach(entry => {
                     const ex = entry.details.find(d => d.name === exerciseName);
-                    if(ex) pastData.push({ date: entry.date, sets: ex.sets });
+                    if(ex) pastData.push({ date: entry.date, sets: ex.sets, laterality: (ex.laterality || exerciseLaterality[exerciseName] || 'bilateral') });
                 });
 
-                let html = `<span class="exercise-title" style="font-weight:bold; color:var(--color-primary); font-size:1.1em;">${getTypeIcon(type)} ${exerciseName}</span>`;
+                const later = (exerciseLaterality[exerciseName] || 'bilateral');
+                const laterBadge = `<span class="badge-laterality">${later === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
+                // Header: title + laterality badge + type badge
+                let html = `<div style="display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:8px;"><span class="exercise-title" style="font-weight:bold; color:var(--color-primary); font-size:1.1em;">${getTypeIcon(type)} ${exerciseName}</span>${laterBadge}</div><span class="badge-type">${getTypeLabel(type)}</span></div>`;
                 if(exerciseNotes[exerciseName]) html += `<div style="font-size:0.85em; background:var(--bg-note); color:var(--text-note); padding:5px; border-radius:4px; margin-top:5px;">📝 Nota: ${exerciseNotes[exerciseName].text}</div>`;
 
                 if (pastData.length > 0) {
@@ -1487,7 +1521,9 @@
                         if (type === 'time') return `${s.weight}s ON / ${s.reps}s OFF`;
                         return `${s.reps}x${s.weight}`;
                     }).join(", ");
-                    html += `<div class="last-performance"><strong>Última:</strong><br>${setsStr}</div>`;
+                    const lastLater = last.laterality || later;
+                    const lastLaterBadge = `<span class="badge-laterality">${lastLater === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
+                    html += `<div class="last-performance"><strong>Última:</strong><br>${setsStr} ${lastLaterBadge}</div>`;
                     html += `
                         <div class="btn-row">
                             <button class="session-util-btn" onclick="window.toggleDetailHistory(${uid})">Historial</button>
@@ -1497,7 +1533,9 @@
                             <div style="max-height:150px; overflow-y:auto; font-size:0.9em;">
                                 ${pastData.map(p => {
                                     const sStr = p.sets.map(s => type === 'bw' ? s.reps : (type === 'weighted' ? `+${s.weight}` : (type === 'time' ? `${s.weight}s / ${s.reps}s` : `${s.reps}x${s.weight}`))).join(", ");
-                                    return `<div style="border-bottom:1px solid var(--border-color); padding:5px; display:flex; justify-content:space-between;"><span>${p.date}</span><b>${sStr}</b></div>`
+                                    const entryLater = p.laterality || (exerciseLaterality[exerciseName] || 'bilateral');
+                                    const laterBadge = `<span class="badge-laterality">${entryLater === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
+                                    return `<div style="border-bottom:1px solid var(--border-color); padding:5px; display:flex; justify-content:space-between;"><span>${p.date} ${laterBadge}</span><b>${sStr}</b></div>`
                                 }).join('')}
                             </div>
                         </div>
@@ -1534,23 +1572,35 @@
                 const gridColor = isDark ? '#444' : '#ddd';
                 const textColor = isDark ? '#aaa' : '#666';
 
+                const lateralityMode = document.getElementById('chartLateralitySelector') ? document.getElementById('chartLateralitySelector').value : 'both';
                 const labels = [];
-                const data = [];
-            
+                const bilateralData = [];
+                const unilateralData = [];
+
+                // Build a map of date -> values for each laterality
+                const dateMap = new Map();
                 [...workoutHistory].reverse().forEach(entry => {
                     const ex = entry.details.find(d => d.name === exerciseName);
-                    if(ex) {
-                        let val = 0;
-                        if (type === 'bw') {
-                            val = Math.max(...ex.sets.map(s => parseInt(s.reps)));
-                        } else if (type === 'time') {
-                            val = Math.max(...ex.sets.map(s => parseFloat(s.weight))); // Weight is work time
-                        } else {
-                            val = Math.max(...ex.sets.map(s => parseFloat(s.weight)));
-                        }
-                        labels.push(entry.date);
-                        data.push(val);
-                    }
+                    if(!ex) return;
+                    const date = entry.date;
+                    let val = 0;
+                    if (type === 'bw') val = Math.max(...ex.sets.map(s => parseInt(s.reps)));
+                    else if (type === 'time') val = Math.max(...ex.sets.map(s => parseFloat(s.weight)));
+                    else val = Math.max(...ex.sets.map(s => parseFloat(s.weight)));
+
+                    const lat = ex.laterality || exerciseLaterality[exerciseName] || 'bilateral';
+                    if(!dateMap.has(date)) dateMap.set(date, { bilateral: null, unilateral: null });
+                    const entryObj = dateMap.get(date);
+                    if(lat === 'bilateral') entryObj.bilateral = val;
+                    else entryObj.unilateral = val;
+                });
+
+                // Build ordered arrays
+                Array.from(dateMap.keys()).forEach(d => {
+                    labels.push(d);
+                    const obj = dateMap.get(d);
+                    bilateralData.push(obj.bilateral !== null ? obj.bilateral : null);
+                    unilateralData.push(obj.unilateral !== null ? obj.unilateral : null);
                 });
 
                 let labelText = "Max Peso (kg)";
@@ -1558,23 +1608,20 @@
                 if (type === 'weighted') labelText = "Peso Extra (kg)";
                 if (type === 'time') labelText = "Tiempo Trabajo (Seg)";
 
+                const datasets = [];
+                if(lateralityMode === 'both' || lateralityMode === 'bilateral') {
+                    datasets.push({ label: labelText + ' - Bilateral', data: bilateralData, borderColor: '#007bff', backgroundColor: 'rgba(0,123,255,0.08)', spanGaps: true, borderWidth: 2, pointRadius: 3, tension: 0.1 });
+                }
+                if(lateralityMode === 'both' || lateralityMode === 'unilateral') {
+                    datasets.push({ label: labelText + ' - Unilateral', data: unilateralData, borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.08)', spanGaps: true, borderWidth: 2, pointRadius: 3, tension: 0.1 });
+                }
+
                 const chartObj = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: labelText, data: data,
-                            borderColor: isDark ? '#4dabf7' : '#007bff',
-                            backgroundColor: isDark ? 'rgba(77, 171, 247, 0.1)' : 'rgba(0,123,255,0.1)',
-                            borderWidth: 2, pointRadius: 3, tension: 0.1
-                        }]
-                    },
+                    data: { labels: labels, datasets: datasets },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        scales: {
-                            x: { display: context === 'main', grid: { color: gridColor }, ticks: { color: textColor } },
-                            y: { grid: { color: gridColor }, ticks: { color: textColor } }
-                        },
+                        scales: { x: { display: context === 'main', grid: { color: gridColor }, ticks: { color: textColor } }, y: { grid: { color: gridColor }, ticks: { color: textColor } } },
                         plugins: { legend: { display: true, labels: { color: textColor } } }
                     }
                 });
@@ -1608,9 +1655,11 @@
                 const day = document.getElementById("editorDaySelector").value;
                 const name = input.value;
                 const type = document.getElementById("exerciseTypeSelector").value;
+                const laterality = document.getElementById("exerciseLateralitySelector").value || 'bilateral';
 
                 allRoutines[currentRoutineIndex].week[day].push(name);
                 exerciseTypes[name] = type;
+                exerciseLaterality[name] = laterality;
 
                 saveData();
                 input.value = "";
@@ -1637,6 +1686,9 @@
 
                 document.getElementById("modalEditName").value = currentName;
                 document.getElementById("modalEditType").value = currentType;
+                // set laterality if known
+                const lat = exerciseLaterality[currentName] || 'bilateral';
+                document.getElementById("modalEditLaterality").value = lat;
             
                 document.getElementById("editModal").classList.remove("hidden");
             }
@@ -1649,6 +1701,7 @@
             window.saveEditExercise = () => {
                 const newName = document.getElementById("modalEditName").value.trim();
                 const newType = document.getElementById("modalEditType").value;
+                const newLaterality = document.getElementById("modalEditLaterality").value || 'bilateral';
             
                 if (!newName) { alert("El nombre no puede estar vacío"); return; }
 
@@ -1673,17 +1726,55 @@
                         if (exerciseTypes[oldName]) {
                             delete exerciseTypes[oldName];
                         }
+                        if (exerciseLaterality[oldName]) {
+                            exerciseLaterality[newName] = exerciseLaterality[oldName];
+                            delete exerciseLaterality[oldName];
+                        }
+                        // Update any history entries laterality fields for renamed exercise
+                        workoutHistory.forEach(entry => {
+                            entry.details.forEach(d => {
+                                if (d.name === newName && d.laterality === oldName) {
+                                    d.laterality = exerciseLaterality[newName] || 'bilateral';
+                                }
+                                // Some older entries may not have laterality, ensure they get one
+                                if (d.name === newName && !d.laterality) {
+                                    d.laterality = exerciseLaterality[newName] || 'bilateral';
+                                }
+                            });
+                        });
                     } else {
                         return; 
                     }
                 }
 
                 exerciseTypes[newName] = newType;
+                exerciseLaterality[newName] = newLaterality;
 
+                saveData();
                 saveData();
                 closeEditModal();
                 renderEditorList();
                 updateExerciseSuggestions();
+
+                // Refresh session cards if session form is open so lateralidad updates immediately
+                try {
+                    const sessionForm = document.getElementById("sessionForm");
+                    if (sessionForm && !sessionForm.classList.contains('hidden') && currentRoutineIndex >= 0) {
+                        const day = document.getElementById("sessionDaySelector").value;
+                        renderSessionCards(allRoutines[currentRoutineIndex].week[day], null);
+                    }
+
+                    // If routine detail view is visible, re-open it to refresh badges
+                    const detailView = document.getElementById("routineDetailView");
+                    if (detailView && !detailView.classList.contains('hidden')) {
+                        const titleEl = document.getElementById("detailTitle");
+                        const rName = titleEl ? titleEl.innerText : null;
+                        if (rName) {
+                            const idx = allRoutines.findIndex(r => r.name === rName);
+                            if (idx !== -1) showRoutineDetail(idx);
+                        }
+                    }
+                } catch (e) { console.error('Error refreshing views after edit save', e); }
             }
 
             function renderEditorList() {
@@ -1694,8 +1785,10 @@
                 exercises.forEach((ex, i) => {
                     const li = document.createElement("li");
                     const type = getExerciseType(ex);
+                    const later = (exerciseLaterality[ex] || 'bilateral');
+                    const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
                     li.innerHTML = `
-                        <span style="flex-grow:1; margin-right:10px;">${getTypeIcon(type)} ${ex}</span>
+                        <span style="flex-grow:1; margin-right:10px;">${getTypeIcon(type)} ${ex} ${laterBadge}</span>
                         <div style="display:flex; gap:5px;">
                             <button class="btn-info btn-small" style="margin:0;" onclick="window.openEditModal(${i})">✎</button>
                             <button class="btn-danger btn-small" style="margin:0;" onclick="window.deleteFromPlan(${i})">X</button>
@@ -1749,11 +1842,22 @@
                 exercises.forEach((exName, i) => {
                     const div = document.createElement("div");
                     div.className = "exercise-card";
-                    const type = getExerciseType(exName); 
+                    const type = getExerciseType(exName);
+
+                    // If resuming a session, prefer the laterality stored in that saved entry
+                    let savedSets = null;
+                    let savedLaterality = null;
+                    if (resumeData) {
+                        const savedEx = resumeData.details.find(d => d.name === exName);
+                        if (savedEx) {
+                            savedSets = savedEx.sets;
+                            savedLaterality = savedEx.laterality;
+                        }
+                    }
 
                     let lastPerformanceHTML = "";
                     const historyEntry = workoutHistory.find(h => h.details.some(d => d.name === exName) && (!editingHistoryIndex || h !== workoutHistory[editingHistoryIndex]));
-                
+
                     if (historyEntry) {
                         const detail = historyEntry.details.find(d => d.name === exName);
                         const setString = detail.sets.map(s => {
@@ -1762,7 +1866,9 @@
                             if(type === 'time') return `${s.weight}s / ${s.reps}s`;
                             return `${s.reps}x${s.weight}`;
                         }).join(", ");
-                        lastPerformanceHTML = `<div class="last-stat-box"><strong>Anterior:</strong> ${setString}</div>`;
+                        const histLater = detail && detail.laterality ? detail.laterality : (exerciseLaterality[exName] || 'bilateral');
+                        const histLaterBadge = `<span class="badge-laterality">${histLater === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
+                        lastPerformanceHTML = `<div class="last-stat-box"><strong>Anterior:</strong> ${setString} ${histLaterBadge}</div>`;
                     }
 
                     let noteHTML = "";
@@ -1770,9 +1876,11 @@
                         noteHTML = `<div id="saved_note_${i}" class="saved-note-box"><div><strong>📝 Nota:</strong> <span id="note_text_${i}">${exerciseNotes[exName].text}</span></div><div style="display:flex; gap:5px;"><button class="btn-outline" onclick="window.editNote(${i})">✏️</button><button class="btn-outline" style="color:red; border-color:red;" onclick="window.deleteNote('${exName}', ${i})">🗑️</button></div></div>`;
                     }
 
+                    const lateralityToShow = savedLaterality || exerciseLaterality[exName] || 'bilateral';
+                    const laterBadge = `<span class="badge-laterality">${lateralityToShow === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
                     div.innerHTML = `
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span class="exercise-title" style="font-weight:bold; color:var(--color-primary); font-size:1.2em;">${getTypeIcon(type)} ${exName}</span>
+                            <div style="display:flex; align-items:center; gap:8px;"><span class="exercise-title" style="font-weight:bold; color:var(--color-primary); font-size:1.2em;">${getTypeIcon(type)} ${exName}</span>${laterBadge}</div>
                             <span class="badge-type">${getTypeLabel(type)}</span>
                         </div>
                         ${lastPerformanceHTML}
@@ -1792,10 +1900,8 @@
                     `;
                     container.appendChild(div);
 
-                    let savedSets = null;
-                    if (resumeData) { const savedEx = resumeData.details.find(d => d.name === exName); if (savedEx) savedSets = savedEx.sets; }
                     if (savedSets && savedSets.length > 0) savedSets.forEach(s => window.addSetRow(i, s, type));
-                    else window.addSetRow(i, null, type); 
+                    else window.addSetRow(i, null, type);
                 });
             }
 
@@ -1915,6 +2021,8 @@
                     }
                 
                     if(sets.length > 0) {
+                        // Ensure we have a laterality mapping for new exercises
+                        if(!exerciseLaterality.hasOwnProperty(exName)) exerciseLaterality[exName] = 'bilateral';
                         let currentMax = 0;
                         if(type === 'bw') currentMax = Math.max(...sets.map(s => parseInt(s.reps)));
                         else currentMax = Math.max(...sets.map(s => parseFloat(s.weight))); 
@@ -1939,7 +2047,7 @@
                             prAlerts.push(`🏆 ¡Nuevo PR en ${exName}: ${currentMax} ${unit}!`);
                         } else if (currentMax === globalMax && globalMax > 0) prStatus = 'matched';
 
-                        completed.push({ name: exName, sets: sets, pr: prStatus });
+                        completed.push({ name: exName, sets: sets, pr: prStatus, laterality: (exerciseLaterality[exName] || 'bilateral') });
                     }
                     const noteInput = document.getElementById(`input_note_${i}`);
                     if(noteInput && noteInput.value.trim() !== "") exerciseNotes[exName] = { text: noteInput.value.trim(), date: new Date().toLocaleDateString() };
@@ -2028,10 +2136,11 @@
                     div.classList.remove("hidden"); 
                     const type = getExerciseType(exName);
                     const pastData = [];
-                    workoutHistory.forEach(entry => { const ex = entry.details.find(d => d.name === exName); if(ex) pastData.push({ date: entry.date, sets: ex.sets }); });
+                    workoutHistory.forEach(entry => { const ex = entry.details.find(d => d.name === exName); if(ex) pastData.push({ date: entry.date, sets: ex.sets, laterality: (ex.laterality || exerciseLaterality[exName] || 'bilateral') }); });
                     div.innerHTML = pastData.length === 0 ? 'Sin historial.' : `<div style="max-height:150px; overflow-y:auto; font-size:0.9em;">${pastData.map(p => {
                         const sStr = p.sets.map(s => type === 'bw' ? s.reps : (type === 'weighted' ? `+${s.weight}` : (type === 'time' ? `${s.weight}s / ${s.reps}s` : `${s.reps}x${s.weight}`))).join(", ");
-                        return `<div style="border-bottom:1px solid var(--border-color); padding:5px; display:flex; justify-content:space-between;"><span>${p.date}</span><b>${sStr}</b></div>`
+                        const laterBadge = (p.laterality === 'unilateral' || exerciseLaterality[exName] === 'unilateral') ? '<span class="badge-laterality">Unilateral</span>' : '';
+                        return `<div style="border-bottom:1px solid var(--border-color); padding:5px; display:flex; justify-content:space-between;"><span>${p.date} ${laterBadge}</span><b>${sStr}</b></div>`
                     }).join('')}</div>`;
                 } else { div.classList.add("hidden"); }
             }
@@ -2048,6 +2157,11 @@
                 sel.innerHTML = '<option value="">-- Selecciona --</option>';
                 const unique = new Set(); workoutHistory.forEach(h => h.details.forEach(d => unique.add(d.name)));
                 unique.forEach(name => { const opt = document.createElement("option"); opt.value = name; opt.innerText = name; sel.appendChild(opt); });
+                // ensure laterality selector exists and bind change
+                const latSel = document.getElementById('chartLateralitySelector');
+                if(latSel) {
+                    latSel.onchange = () => { const ex = document.getElementById('graphExerciseSelector').value; if(ex) renderChart(null, ex, 'main'); };
+                }
             }
             function renderHistoryList() {
                 const list = document.getElementById("historyList");
@@ -2058,8 +2172,10 @@
                     entry.details.forEach(d => {
                         let badge = ""; if (d.pr === 'new') badge = '<span class="badge-pr">🏆 NEW PR</span>';
                         const type = getExerciseType(d.name);
+                        const later = d.laterality || exerciseLaterality[d.name] || 'bilateral';
+                        const laterBadge = `<span class="badge-laterality">${later === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
                         const setsStr = d.sets.map(s => type === 'bw' ? s.reps : (type === 'weighted' ? `+${s.weight}` : (type === 'time' ? `${s.weight}s / ${s.reps}s` : `${s.reps}x${s.weight}kg`))).join(", ");
-                        detailsHtml += `<div>• ${getTypeIcon(type)} ${d.name}: ${setsStr} ${badge}</div>`;
+                        detailsHtml += `<div>• ${getTypeIcon(type)} ${d.name} ${laterBadge}: ${setsStr} ${badge}</div>`;
                     });
                     li.innerHTML = `<div style="width:100%;"><div style="font-weight:bold;">${entry.routineName} (${entry.dayName}) <span style="font-weight:normal;font-size:0.8em;opacity:0.7;">${entry.date}</span></div><div style="font-size:0.9em;margin-top:5px;opacity:0.9;">${detailsHtml}</div></div>`;
                     list.appendChild(li);
