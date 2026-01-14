@@ -37,6 +37,7 @@
             --timer-rest: #ff4444; /* Vivid Red */
             --timer-prep: #ffbb33; /* Vivid Yellow/Orange */
         }
+        
         body.dark-mode {
             --bg-body: #121212;
             --bg-container: #1e1e1e;
@@ -198,6 +199,10 @@
             padding: 20px; border-radius: 12px; width: 90%; max-width: 400px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid var(--border-color);
         }
+
+        /* Calendar action buttons: keep edit/clone same size */
+        .cal-actions { display:flex; gap:8px; }
+        .cal-actions button { display:inline-flex; align-items:center; justify-content:center; height:36px; padding:8px 12px; width:auto; border-radius:8px; }
 
         /* --- LOGIN OVERLAY --- */
         #loginOverlay {
@@ -705,6 +710,20 @@
                 <h4 id="calDetailDate" style="border-bottom:1px solid var(--border-color); padding-bottom:5px;"></h4>
                 <div id="calDetailContent"></div>
             </div>
+
+            <!-- Clone modal: choose destination date when cloning a workout -->
+            <div id="cloneModal" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <h3>Clonar Sesión</h3>
+                    <p id="cloneSourceInfo" style="font-size:0.9em; opacity:0.9;"></p>
+                    <label style="font-size:0.9em;">Fecha destino:</label>
+                    <input type="date" id="cloneTargetDate" style="margin-bottom:10px;">
+                    <div class="cal-actions" style="justify-content:flex-end; margin-top:10px;">
+                        <button class="btn-secondary" onclick="closeCloneModal()">Cancelar</button>
+                        <button class="btn-primary" onclick="cloneEntryToDate()">Clonar</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -801,6 +820,8 @@
             };
             let pressTimer = null;
             let isLongPress = false;
+            // If calendar edit/create is active, store the target date string here
+            let calendarEditDate = null;
 
             // Sessions-based routines: days removed
 
@@ -1386,11 +1407,74 @@
                     dayDiv.onclick = () => {
                         document.querySelectorAll(".cal-day").forEach(d => d.classList.remove("selected"));
                         dayDiv.classList.add("selected");
+                        // Show details and provide quick edit/create controls
                         showCalendarDayDetails(dateStr, workoutEntry);
+                        const detailBox = document.getElementById('calendarDayDetails');
+                        const content = document.getElementById('calDetailContent');
+                        // Append action buttons
+                        const actions = document.createElement('div');
+                        actions.style.marginTop = '10px';
+                        if (workoutEntry) {
+                            actions.innerHTML = `<div class="cal-actions"><button class='btn-success' id='calEditBtn'>Editar</button><button class='btn-outline' id='calCloneBtn'>Clonar</button></div>`;
+                            content.appendChild(actions);
+                            document.getElementById('calEditBtn').onclick = () => editCalendarEntry(dateStr);
+                            document.getElementById('calCloneBtn').onclick = () => openCloneModal(dateStr);
+                        } else {
+                            actions.innerHTML = `<div style="display:flex; gap:8px;"><button class='btn-primary' id='calCreateBtn'>Crear Sesión</button></div>`;
+                            content.appendChild(actions);
+                            document.getElementById('calCreateBtn').onclick = () => createCalendarEntry(dateStr);
+                        }
                     };
                     container.appendChild(dayDiv);
                 }
             }
+
+            // CLONE MODAL HANDLERS (exposed globally)
+            window._cloneSourceDate = null;
+            window.openCloneModal = function(sourceDateStr) {
+                window._cloneSourceDate = sourceDateStr;
+                const entry = workoutHistory.find(h => h.date === sourceDateStr);
+                if (!entry) { alert('Fuente no encontrada'); return; }
+                const infoEl = document.getElementById('cloneSourceInfo');
+                if (infoEl) infoEl.innerText = `${entry.routineName} (${entry.sessionName || ''}) - ${entry.date}`;
+                // set default target to today
+                const today = new Date();
+                const iso = today.toISOString().slice(0,10);
+                const tgt = document.getElementById('cloneTargetDate'); if (tgt) tgt.value = iso;
+                const modal = document.getElementById('cloneModal'); if (modal) modal.classList.remove('hidden');
+            };
+
+            window.closeCloneModal = function() {
+                const modal = document.getElementById('cloneModal'); if (modal) modal.classList.add('hidden');
+                window._cloneSourceDate = null;
+            };
+
+            window.cloneEntryToDate = function() {
+                const targetEl = document.getElementById('cloneTargetDate');
+                const target = targetEl ? targetEl.value : null;
+                if (!target) { alert('Selecciona una fecha destino'); return; }
+                // convert YYYY-MM-DD to locale date string used by app
+                const d = new Date(target + 'T00:00:00');
+                const targetStr = d.toLocaleDateString();
+                const srcEntry = workoutHistory.find(h => h.date === window._cloneSourceDate);
+                if (!srcEntry) { alert('Entrada fuente no encontrada'); window.closeCloneModal(); return; }
+
+                const existingIdx = workoutHistory.findIndex(h => h.date === targetStr);
+                if (existingIdx !== -1) {
+                    if (!confirm('Ya existe una entrada en la fecha destino. ¿Sobrescribir?')) return;
+                    // overwrite
+                    const copy = JSON.parse(JSON.stringify(srcEntry));
+                    copy.date = targetStr; copy.timestamp = new Date().getTime();
+                    workoutHistory[existingIdx] = copy;
+                } else {
+                    const copy = JSON.parse(JSON.stringify(srcEntry));
+                    copy.date = targetStr; copy.timestamp = new Date().getTime();
+                    workoutHistory.unshift(copy);
+                }
+                saveData(); renderCalendar(); renderHistoryList();
+                window.closeCloneModal();
+                alert('Clonado correctamente a ' + targetStr);
+            };
 
             function showCalendarDayDetails(dateStr, workout) {
                 const detailBox = document.getElementById("calendarDayDetails");
@@ -1423,6 +1507,49 @@
                 });
                 html += `</ul>`;
                 content.innerHTML = html;
+            }
+
+            // Allow editing or creating an entry from the calendar
+            async function editCalendarEntry(dateStr) {
+                // Find the history entry for the date
+                const idx = workoutHistory.findIndex(h => h.date === dateStr);
+                if (idx === -1) { alert('No existe entrada para esa fecha'); return; }
+                const entry = workoutHistory[idx];
+                // Try to find a routine index for nicer UI
+                const rIdx = allRoutines.findIndex(r => r.name === entry.routineName);
+                if (rIdx !== -1) currentRoutineIndex = rIdx;
+
+                editingHistoryIndex = idx;
+                calendarEditDate = dateStr;
+
+                hideAllViews();
+                document.getElementById('sessionView').classList.remove('hidden');
+                document.getElementById('sessionSetup').classList.add('hidden');
+                document.getElementById('sessionForm').classList.remove('hidden');
+                // Build exercises list from entry details
+                const exercises = entry.details.map(d => d.name);
+                currentSessionExercises = exercises.slice();
+                currentSessionName = entry.sessionName || '';
+                renderSessionCards(exercises, entry);
+                requestWakeLock();
+            }
+
+            function createCalendarEntry(dateStr) {
+                if (!Array.isArray(allRoutines) || allRoutines.length === 0) {
+                    if(!confirm('No tienes rutinas. ¿Crear una nueva rutina ahora?')) return;
+                    hideAllViews(); document.getElementById('editorView').classList.remove('hidden'); return;
+                }
+                // Ask the user to pick a routine by index
+                let msg = 'Selecciona rutina para basar la sesión (escribe el número):\n';
+                allRoutines.forEach((r, i) => { msg += `${i}: ${r.name}\n`; });
+                const resp = prompt(msg, '0');
+                if (resp === null) return; // cancelled
+                const idx = parseInt(resp);
+                if (isNaN(idx) || idx < 0 || idx >= allRoutines.length) { alert('Índice inválido'); return; }
+
+                calendarEditDate = dateStr;
+                // Open session setup for that routine so user can choose session and start
+                setupSession(idx);
             }
 
             // --- INYECTAR EJERCICIOS POR DEFECTO ---
@@ -2120,9 +2247,22 @@
 
                 if(completed.length === 0) { alert("Registra algo primero."); return; }
             
+                // Determine routineName and sessionName safely (preserve original if editing an entry)
+                let routineName = '';
+                let sessionName = '';
+                if (editingHistoryIndex !== null && workoutHistory[editingHistoryIndex]) {
+                    routineName = workoutHistory[editingHistoryIndex].routineName || '';
+                    sessionName = workoutHistory[editingHistoryIndex].sessionName || '';
+                }
+                if (allRoutines[currentRoutineIndex] && allRoutines[currentRoutineIndex].name) {
+                    routineName = allRoutines[currentRoutineIndex].name;
+                }
+                const sc = document.getElementById('sessionChoice');
+                if (sc && sc.selectedOptions && sc.selectedOptions[0]) sessionName = sc.selectedOptions[0].text;
+
                 const entry = {
-                    routineName: routine.name, sessionName: (document.getElementById('sessionChoice') ? document.getElementById('sessionChoice').selectedOptions[0].text : ''),
-                    date: new Date().toLocaleDateString(), timestamp: new Date().getTime(),
+                    routineName: routineName, sessionName: sessionName,
+                    date: calendarEditDate || new Date().toLocaleDateString(), timestamp: new Date().getTime(),
                     details: completed
                 };
 
@@ -2134,6 +2274,8 @@
                 if(prAlerts.length > 0) msg += "\n\n" + prAlerts.join("\n");
                 alert(msg);
                 editingHistoryIndex = null; 
+                // Clear calendar edit state
+                calendarEditDate = null;
                 showMainMenu();
             }
 
