@@ -606,15 +606,15 @@
                 </div>
             </div>
 
-            <select id="editorDaySelector">
-                <option value="Monday">Lunes</option>
-                <option value="Tuesday">Martes</option>
-                <option value="Wednesday">Miércoles</option>
-                <option value="Thursday">Jueves</option>
-                <option value="Friday">Viernes</option>
-                <option value="Saturday">Sábado</option>
-                <option value="Sunday">Domingo</option>
-            </select>
+            <!-- Removed day selector: sessions used instead -->
+            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+                <input type="text" id="newSessionName" placeholder="Nueva sesión (nombre)" style="flex:1;">
+                <button class="btn-primary" id="btnAddSession" style="width:auto; padding:10px;">Añadir Sesión</button>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+                <select id="editorSessionSelector" style="flex:1;"><option value="">-- Selecciona sesión --</option></select>
+                <button class="btn-danger btn-small" id="btnDeleteSession" style="width:auto;">Eliminar</button>
+            </div>
             
             <label style="font-size:0.9em; opacity:0.8;">Tipo de Ejercicio:</label>
             <select id="exerciseTypeSelector" style="margin-bottom: 5px;">
@@ -644,17 +644,9 @@
                 <button class="btn-outline" style="width: auto;" onclick="window.activateTimer()">⏱️ Timer</button>
             </div>
             <div id="sessionSetup">
-                <h3>Elige el día:</h3>
-                <select id="sessionDaySelector">
-                    <option value="Monday">Lunes</option>
-                    <option value="Tuesday">Martes</option>
-                    <option value="Wednesday">Miércoles</option>
-                    <option value="Thursday">Jueves</option>
-                    <option value="Friday">Viernes</option>
-                    <option value="Saturday">Sábado</option>
-                    <option value="Sunday">Domingo</option>
-                </select>
-                <button class="btn-success" style="padding:15px; font-size:1.1em;" id="btnStartWorkout">¡COMENZAR!</button>
+                <h3>Elige la sesión:</h3>
+                <select id="sessionChoice" style="margin-top: 8px;"></select>
+                <button class="btn-success" style="padding:15px; font-size:1.1em; margin-top:8px;" id="btnStartWorkout">¡COMENZAR!</button>
             </div>
             <div id="sessionForm" class="hidden">
                 <div id="resumeBadge">✏️ MODO EDICIÓN: Retomando sesión de hoy</div>
@@ -782,6 +774,9 @@
             let tempEditDay = null;
             let tempEditIndex = null;
             let tempEditOldName = null;
+            let tempEditIsSession = false;
+            let currentSessionExercises = [];
+            let currentSessionName = '';
 
             let currentCalendarDate = new Date();
             let mainChartInstance = null;
@@ -807,8 +802,7 @@
             let pressTimer = null;
             let isLongPress = false;
 
-            const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-            const dayTranslation = { "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo" };
+            // Sessions-based routines: days removed
 
             // --- DARK MODE ---
             window.toggleTheme = () => {
@@ -1308,7 +1302,9 @@
                 if (!input.value) return;
                 const newRoutine = {
                     name: input.value,
-                    week: { "Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": [], "Saturday": [], "Sunday": [] }
+                    // New session-oriented structure. Keep backward-compatible 'week' for older data.
+                    week: { "Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": [], "Saturday": [], "Sunday": [] },
+                    sessions: [ { name: 'General', exercises: [] } ]
                 };
                 allRoutines.push(newRoutine);
                 saveData();
@@ -1404,7 +1400,7 @@
 
                 if (!workout) { content.innerHTML = "<p style='text-align:center; opacity:0.6;'>Día de descanso 💤</p>"; return; }
 
-                let html = `<div><strong style="font-size:1.1em; color:var(--color-primary);">${workout.routineName}</strong> (${workout.dayName})</div><ul style="margin-top:10px;">`;
+                let html = `<div><strong style="font-size:1.1em; color:var(--color-primary);">${workout.routineName}</strong> (${workout.sessionName || ''})</div><ul style="margin-top:10px;">`;
             
                 workout.details.forEach(d => {
                     let badge = "";
@@ -1482,19 +1478,13 @@
                 detailChartInstances = {}; 
 
                 let uniqueId = 0;
-                daysOrder.forEach(dayKey => {
-                    const exercises = routine.week[dayKey];
-                    if (exercises && exercises.length > 0) {
-                        const h4 = document.createElement("h4");
-                        h4.className = "day-header";
-                        h4.innerText = dayTranslation[dayKey];
-                        container.appendChild(h4);
-                        exercises.forEach(exName => {
-                            container.appendChild(createDetailCard(exName, uniqueId));
-                            uniqueId++;
-                        });
-                    }
-                });
+                // Render sessions
+                if(routine.sessions && routine.sessions.length > 0) {
+                    routine.sessions.forEach(sess => {
+                        const h4 = document.createElement('h4'); h4.className = 'day-header'; h4.innerText = sess.name; container.appendChild(h4);
+                        sess.exercises.forEach(exName => { container.appendChild(createDetailCard(exName, uniqueId)); uniqueId++; });
+                    });
+                }
             }
 
             function createDetailCard(exerciseName, uid) {
@@ -1638,7 +1628,46 @@
                 document.getElementById("editorView").classList.remove("hidden");
                 document.getElementById("editRoutineNameInput").value = allRoutines[index].name;
                 updateExerciseSuggestions();
-                renderEditorList();
+                renderEditorSessions();
+            }
+
+            function renderEditorSessions() {
+                const sel = document.getElementById('editorSessionSelector');
+                sel.innerHTML = '<option value="">-- Selecciona sesión --</option>';
+                const list = document.getElementById('editorList');
+                list.innerHTML = '';
+                const daySel = document.getElementById('editorDaySelector');
+                // populate sessions for current routine
+                const routine = allRoutines[currentRoutineIndex];
+                if(!routine.sessions) routine.sessions = [ { name: 'General', exercises: [] } ];
+                routine.sessions.forEach((s, idx) => {
+                    const opt = document.createElement('option'); opt.value = idx; opt.innerText = s.name; sel.appendChild(opt);
+                });
+
+                // bind add/delete session buttons
+                document.getElementById('btnAddSession').onclick = () => {
+                    const name = document.getElementById('newSessionName').value.trim(); if(!name) return alert('Nombre sesión vacío');
+                    routine.sessions.push({ name: name, exercises: [] });
+                    saveData(); renderEditorSessions(); document.getElementById('newSessionName').value = '';
+                };
+                document.getElementById('btnDeleteSession').onclick = () => {
+                    const v = sel.value; if(!v) return alert('Selecciona sesión');
+                    if(confirm('Eliminar sesión?')) { routine.sessions.splice(parseInt(v),1); saveData(); renderEditorSessions(); }
+                };
+
+                sel.onchange = () => {
+                    const v = sel.value; list.innerHTML = '';
+                    if(v === '') return;
+                    const exercises = routine.sessions[parseInt(v)].exercises || [];
+                    exercises.forEach((ex, i) => {
+                        const li = document.createElement('li'); const type = getExerciseType(ex); const later = (exerciseLaterality[ex] || 'bilateral'); const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
+                        li.innerHTML = ` <span style="flex-grow:1; margin-right:10px;">${getTypeIcon(type)} ${ex} ${laterBadge}</span><div style="display:flex; gap:5px;"><button class="btn-info btn-small" style="margin:0;" onclick="window.openEditModal(${i})">✎</button><button class="btn-danger btn-small" style="margin:0;" onclick="window.deleteFromSession(${i})">X</button></div>`;
+                        list.appendChild(li);
+                    });
+                };
+
+                // initialize empty
+                sel.value = '';
             }
 
             window.saveRoutineRename = () => {
@@ -1652,35 +1681,52 @@
             window.addExerciseToPlan = () => {
                 const input = document.getElementById("exerciseInput");
                 if(!input.value) return;
-                const day = document.getElementById("editorDaySelector").value;
                 const name = input.value;
                 const type = document.getElementById("exerciseTypeSelector").value;
                 const laterality = document.getElementById("exerciseLateralitySelector").value || 'bilateral';
 
-                allRoutines[currentRoutineIndex].week[day].push(name);
+                const sel = document.getElementById('editorSessionSelector');
+                if(sel && sel.value !== '') {
+                    const sIdx = parseInt(sel.value);
+                    const routine = allRoutines[currentRoutineIndex];
+                    if(!routine.sessions) routine.sessions = [ { name: 'General', exercises: [] } ];
+                    routine.sessions[sIdx].exercises.push(name);
+                } else {
+                    // fallback to day-based
+                    const day = document.getElementById("editorDaySelector").value;
+                    allRoutines[currentRoutineIndex].week[day].push(name);
+                }
                 exerciseTypes[name] = type;
                 exerciseLaterality[name] = laterality;
 
                 saveData();
                 input.value = "";
                 updateExerciseSuggestions();
-                renderEditorList();
+                renderEditorSessions();
             }
 
-            window.deleteFromPlan = (exIndex) => {
-                const day = document.getElementById("editorDaySelector").value;
-                allRoutines[currentRoutineIndex].week[day].splice(exIndex, 1);
-                saveData();
-                renderEditorList();
+            window.deleteFromSession = (exIndex) => {
+                const sel = document.getElementById('editorSessionSelector');
+                if(!sel || sel.value === '') return alert('Selecciona sesión');
+                const sIdx = parseInt(sel.value);
+                const routine = allRoutines[currentRoutineIndex];
+                routine.sessions[sIdx].exercises.splice(exIndex,1);
+                saveData(); renderEditorSessions();
             }
+
+            // Day-based delete removed - sessions used instead
 
             // --- ADVANCED EDITING (MODAL) ---
             window.openEditModal = (exIndex) => {
-                const day = document.getElementById("editorDaySelector").value;
-                const currentName = allRoutines[currentRoutineIndex].week[day][exIndex];
+                // Modal edit for session exercises: use selected session
+                const sel = document.getElementById('editorSessionSelector');
+                const sIdx = sel && sel.value !== '' ? parseInt(sel.value) : 0;
+                const currentName = (allRoutines[currentRoutineIndex].sessions && allRoutines[currentRoutineIndex].sessions[sIdx]) ? allRoutines[currentRoutineIndex].sessions[sIdx].exercises[exIndex] : '';
                 const currentType = getExerciseType(currentName);
 
-                tempEditDay = day;
+                tempEditIsSession = true;
+                tempEditIndex = exIndex;
+                tempEditOldName = currentName;
                 tempEditIndex = exIndex;
                 tempEditOldName = currentName;
 
@@ -1753,15 +1799,19 @@
                 saveData();
                 saveData();
                 closeEditModal();
-                renderEditorList();
+                renderEditorSessions();
                 updateExerciseSuggestions();
 
                 // Refresh session cards if session form is open so lateralidad updates immediately
                 try {
                     const sessionForm = document.getElementById("sessionForm");
                     if (sessionForm && !sessionForm.classList.contains('hidden') && currentRoutineIndex >= 0) {
-                        const day = document.getElementById("sessionDaySelector").value;
-                        renderSessionCards(allRoutines[currentRoutineIndex].week[day], null);
+                        // If a sessionChoice select exists, use it
+                        const sc = document.getElementById('sessionChoice');
+                        if (sc) {
+                            const idx = sc.value; const routine = allRoutines[currentRoutineIndex]; const exercises = (routine.sessions && routine.sessions[idx]) ? routine.sessions[idx].exercises : [];
+                            renderSessionCards(exercises, null);
+                        }
                     }
 
                     // If routine detail view is visible, re-open it to refresh badges
@@ -1777,26 +1827,7 @@
                 } catch (e) { console.error('Error refreshing views after edit save', e); }
             }
 
-            function renderEditorList() {
-                const list = document.getElementById("editorList");
-                list.innerHTML = "";
-                const day = document.getElementById("editorDaySelector").value;
-                const exercises = allRoutines[currentRoutineIndex].week[day];
-                exercises.forEach((ex, i) => {
-                    const li = document.createElement("li");
-                    const type = getExerciseType(ex);
-                    const later = (exerciseLaterality[ex] || 'bilateral');
-                    const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
-                    li.innerHTML = `
-                        <span style="flex-grow:1; margin-right:10px;">${getTypeIcon(type)} ${ex} ${laterBadge}</span>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-info btn-small" style="margin:0;" onclick="window.openEditModal(${i})">✎</button>
-                            <button class="btn-danger btn-small" style="margin:0;" onclick="window.deleteFromPlan(${i})">X</button>
-                        </div>
-                    `;
-                    list.appendChild(li);
-                });
-            }
+            // Day-based editor removed; use sessions (renderEditorSessions)
 
             // --- SESSION ---
             window.setupSession = (index) => {
@@ -1807,6 +1838,39 @@
                 document.getElementById("sessionForm").classList.add("hidden");
                 document.getElementById("floatingTimer").classList.add("hidden");
                 editingHistoryIndex = null;
+
+                // If routine has sessions, populate selector
+                const routine = allRoutines[currentRoutineIndex];
+                const sel = document.getElementById('sessionChoice');
+                sel.innerHTML = '';
+                if (routine && routine.sessions && routine.sessions.length > 0) {
+                    routine.sessions.forEach((s, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = s.name; sel.appendChild(opt); });
+                } else {
+                    sel.innerHTML = '<option value="0">General</option>';
+                }
+                document.getElementById('btnStartWorkout').onclick = () => {
+                    const sIdx = document.getElementById('sessionChoice').value;
+                    const exercises = (routine.sessions && routine.sessions[sIdx]) ? routine.sessions[sIdx].exercises : [];
+                    startWorkoutWithExercises(exercises);
+                };
+            }
+
+            function startWorkoutWithExercises(exercises) {
+                if(!exercises || exercises.length === 0) { alert('No hay ejercicios en esta sesión.'); return; }
+                const routine = allRoutines[currentRoutineIndex];
+                currentSessionExercises = exercises.slice();
+                currentSessionName = (document.getElementById('sessionChoice') ? document.getElementById('sessionChoice').selectedOptions[0].text : '');
+                const todayStr = new Date().toLocaleDateString();
+                const existingIndex = workoutHistory.findIndex(h => h.date === todayStr && h.routineName === routine.name);
+                let resumeData = null;
+                if (existingIndex !== -1) {
+                    if(confirm('⚠️ ¿Retomar sesión de hoy?')) { editingHistoryIndex = existingIndex; resumeData = workoutHistory[existingIndex]; document.getElementById('resumeBadge').style.display = 'block'; }
+                    else { editingHistoryIndex = null; document.getElementById('resumeBadge').style.display = 'none'; }
+                } else { editingHistoryIndex = null; document.getElementById('resumeBadge').style.display = 'none'; }
+                document.getElementById('sessionSetup').classList.add('hidden');
+                document.getElementById('sessionForm').classList.remove('hidden');
+                renderSessionCards(exercises, resumeData);
+                requestWakeLock();
             }
 
             window.startWorkout = () => {
@@ -1827,8 +1891,10 @@
                     } else { editingHistoryIndex = null; document.getElementById("resumeBadge").style.display = "none"; }
                 } else { editingHistoryIndex = null; document.getElementById("resumeBadge").style.display = "none"; }
 
+                // If routine has sessions, allow selecting a session name instead of day
                 document.getElementById("sessionSetup").classList.add("hidden");
                 document.getElementById("sessionForm").classList.remove("hidden");
+                // If a session is stored in routine.sessions and user chose one previously, try to use it.
                 renderSessionCards(exercises, resumeData);
 
                 requestWakeLock();
@@ -1991,9 +2057,8 @@
             window.finishSession = () => {
                 window.stopTimer();
 
-                const day = document.getElementById("sessionDaySelector").value;
                 const routine = allRoutines[currentRoutineIndex];
-                const exercises = routine.week[day];
+                const exercises = currentSessionExercises && currentSessionExercises.length ? currentSessionExercises : [];
                 const completed = [];
                 const prAlerts = [];
             
@@ -2056,7 +2121,7 @@
                 if(completed.length === 0) { alert("Registra algo primero."); return; }
             
                 const entry = {
-                    routineName: routine.name, dayName: day,
+                    routineName: routine.name, sessionName: (document.getElementById('sessionChoice') ? document.getElementById('sessionChoice').selectedOptions[0].text : ''),
                     date: new Date().toLocaleDateString(), timestamp: new Date().getTime(),
                     details: completed
                 };
@@ -2177,7 +2242,7 @@
                         const setsStr = d.sets.map(s => type === 'bw' ? s.reps : (type === 'weighted' ? `+${s.weight}` : (type === 'time' ? `${s.weight}s / ${s.reps}s` : `${s.reps}x${s.weight}kg`))).join(", ");
                         detailsHtml += `<div>• ${getTypeIcon(type)} ${d.name} ${laterBadge}: ${setsStr} ${badge}</div>`;
                     });
-                    li.innerHTML = `<div style="width:100%;"><div style="font-weight:bold;">${entry.routineName} (${entry.dayName}) <span style="font-weight:normal;font-size:0.8em;opacity:0.7;">${entry.date}</span></div><div style="font-size:0.9em;margin-top:5px;opacity:0.9;">${detailsHtml}</div></div>`;
+                    li.innerHTML = `<div style="width:100%;"><div style="font-weight:bold;">${entry.routineName} (${entry.sessionName || ''}) <span style="font-weight:normal;font-size:0.8em;opacity:0.7;">${entry.date}</span></div><div style="font-size:0.9em;margin-top:5px;opacity:0.9;">${detailsHtml}</div></div>`;
                     list.appendChild(li);
                 });
             }
@@ -2191,7 +2256,8 @@
             document.getElementById("btnShowCalendar").onclick = window.showCalendar;
             document.getElementById("btnBackFromEditor").onclick = showMainMenu;
             document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
-            document.getElementById("editorDaySelector").onchange = renderEditorList;
+            // editorDaySelector removed; keep session UI independent
+            document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
             document.getElementById("btnCancelSession").onclick = showMainMenu;
             document.getElementById("btnStartWorkout").onclick = window.startWorkout;
             document.getElementById("btnFinishSession").onclick = window.finishSession;
