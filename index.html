@@ -1028,6 +1028,8 @@
                     if(e.target.tagName === 'BUTTON') return; 
                     window.expandTimer();
                 });
+                // Initialize history state so back button behaviour is predictable
+                try { history.replaceState({ view: 'main' }, '', '#main'); } catch (e) { /* ignore */ }
             });
 
             // --- AUTH LISTENER ---
@@ -1073,6 +1075,8 @@
                 document.getElementById("floatingTimer").classList.add("hidden");
             
                 releaseWakeLock();
+                // push history for main menu
+                pushAppState('main');
             }
 
             function hideAllViews() {
@@ -1083,6 +1087,42 @@
                 document.getElementById("routineDetailView").classList.add("hidden");
                 document.getElementById("calendarView").classList.add("hidden");
             }
+
+            // --- APP NAVIGATION (history) ---
+            // Suppress pushing state when responding to a popstate event
+            let appNavSuppressPush = false;
+
+            function pushAppState(view, data) {
+                if (appNavSuppressPush) return;
+                const state = Object.assign({ view: view }, data || {});
+                try { history.pushState(state, '', '#' + view + (data && data.index !== undefined ? ('-' + data.index) : '')); }
+                catch (e) { console.warn('pushState failed', e); }
+            }
+
+            window.addEventListener('popstate', (ev) => {
+                const st = ev.state;
+                appNavSuppressPush = true;
+                try {
+                    if (!st || st.view === 'main') {
+                        showMainMenu();
+                    } else if (st.view === 'editor') {
+                        // index might be undefined
+                        window.showEditor(st.index !== undefined ? st.index : 0);
+                    } else if (st.view === 'calendar') {
+                        window.showCalendar();
+                    } else if (st.view === 'history') {
+                        window.showHistoryView();
+                    } else if (st.view === 'detail') {
+                        window.showRoutineDetail(st.index !== undefined ? st.index : 0);
+                    } else if (st.view === 'session') {
+                        window.setupSession(st.index !== undefined ? st.index : 0);
+                    } else {
+                        showMainMenu();
+                    }
+                } catch (e) { console.error('Error handling popstate', e); showMainMenu(); }
+                // allow future pushes
+                setTimeout(() => { appNavSuppressPush = false; }, 50);
+            });
 
             // --- TIMER LOGIC ---
             window.openTimerConfig = () => {
@@ -1369,7 +1409,8 @@
             }
 
             // --- CALENDAR ---
-            window.showCalendar = () => { hideAllViews(); document.getElementById("calendarView").classList.remove("hidden"); renderCalendar(); }
+            window.showCalendar = () => { hideAllViews(); document.getElementById("calendarView").classList.remove("hidden"); renderCalendar(); pushAppState('calendar'); }
+            
             window.changeMonth = (offset) => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset); renderCalendar(); }
 
             function renderCalendar() {
@@ -1532,6 +1573,7 @@
                 currentSessionName = entry.sessionName || '';
                 renderSessionCards(exercises, entry);
                 requestWakeLock();
+                pushAppState('session', { index: currentRoutineIndex });
             }
 
             function createCalendarEntry(dateStr) {
@@ -1756,6 +1798,7 @@
                 document.getElementById("editRoutineNameInput").value = allRoutines[index].name;
                 updateExerciseSuggestions();
                 renderEditorSessions();
+                pushAppState('editor', { index: index });
             }
 
             function renderEditorSessions() {
@@ -1796,6 +1839,9 @@
                 // initialize empty
                 sel.value = '';
             }
+
+            // push history when opening routine detail
+            window.showRoutineDetail = (function(orig){ return function(index){ orig(index); pushAppState('detail', { index: index }); }; })(window.showRoutineDetail);
 
             window.saveRoutineRename = () => {
                 const newName = document.getElementById("editRoutineNameInput").value.trim();
@@ -1980,6 +2026,7 @@
                     const exercises = (routine.sessions && routine.sessions[sIdx]) ? routine.sessions[sIdx].exercises : [];
                     startWorkoutWithExercises(exercises);
                 };
+                pushAppState('session', { index: index });
             }
 
             function startWorkoutWithExercises(exercises) {
@@ -2357,7 +2404,8 @@
                 if(chartDiv.classList.contains("hidden")) { chartDiv.classList.remove("hidden"); renderChart(i, exName, 'session'); } else { chartDiv.classList.add("hidden"); }
             }
 
-            window.showHistoryView = () => { hideAllViews(); document.getElementById("historyView").classList.remove("hidden"); populateGraphSelector(); renderHistoryList(); }
+            window.showHistoryView = () => { hideAllViews(); document.getElementById("historyView").classList.remove("hidden"); populateGraphSelector(); renderHistoryList(); pushAppState('history'); }
+        
         
             function populateGraphSelector() {
                 const sel = document.getElementById("graphExerciseSelector");
@@ -2396,16 +2444,16 @@
             document.getElementById("btnStopCycle").onclick = window.stopActiveCycle;
             document.getElementById("btnShowHistory").onclick = window.showHistoryView;
             document.getElementById("btnShowCalendar").onclick = window.showCalendar;
-            document.getElementById("btnBackFromEditor").onclick = showMainMenu;
+            document.getElementById("btnBackFromEditor").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
             document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
             // editorDaySelector removed; keep session UI independent
             document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
-            document.getElementById("btnCancelSession").onclick = showMainMenu;
+            document.getElementById("btnCancelSession").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
             document.getElementById("btnStartWorkout").onclick = window.startWorkout;
             document.getElementById("btnFinishSession").onclick = window.finishSession;
-            document.getElementById("btnBackFromHistory").onclick = showMainMenu;
-            document.getElementById("btnBackFromDetail").onclick = showMainMenu;
-            document.getElementById("btnBackFromCalendar").onclick = showMainMenu;
+            document.getElementById("btnBackFromHistory").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
+            document.getElementById("btnBackFromDetail").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
+            document.getElementById("btnBackFromCalendar").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
             document.getElementById("btnPrevMonth").onclick = () => window.changeMonth(-1);
             document.getElementById("btnNextMonth").onclick = () => window.changeMonth(1);
             // Google login button (must bind here because module scope)
