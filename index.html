@@ -37,7 +37,6 @@
             --timer-rest: #ff4444; /* Vivid Red */
             --timer-prep: #ffbb33; /* Vivid Yellow/Orange */
         }
-        
         body.dark-mode {
             --bg-body: #121212;
             --bg-container: #1e1e1e;
@@ -452,6 +451,22 @@
             <p style="font-size:0.8em; margin-top:15px; color:#666;">Tus datos se guardarán de forma segura en tu cuenta.</p>
         </div>
     </div>
+
+            <!-- Create Session modal: choose routine and session for a specific date -->
+            <div id="createSessionModal" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <h3>📅 Crear Sesión</h3>
+                    <p id="createSessionDate" style="font-size:0.9em; opacity:0.9;"></p>
+                    <label style="font-size:0.9em;">Seleccionar Rutina:</label>
+                    <select id="createSessionRoutineSelect" style="margin-bottom:8px; width:100%;"></select>
+                    <label style="font-size:0.9em;">Seleccionar Sesión:</label>
+                    <select id="createSessionSessionSelect" style="margin-bottom:10px; width:100%;"></select>
+                    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:10px;">
+                        <button class="btn-secondary" onclick="window.closeCreateSessionModal()">Cancelar</button>
+                        <button class="btn-primary" id="btnCreateSessionModalConfirm" onclick="window.createSessionFromModal()">Crear</button>
+                    </div>
+                </div>
+            </div>
 
     <div id="loadingOverlay" class="hidden">
         <div class="spinner"></div>
@@ -1456,10 +1471,11 @@
                         const actions = document.createElement('div');
                         actions.style.marginTop = '10px';
                         if (workoutEntry) {
-                            actions.innerHTML = `<div class="cal-actions"><button class='btn-success' id='calEditBtn'>Editar</button><button class='btn-outline' id='calCloneBtn'>Clonar</button></div>`;
+                            actions.innerHTML = `<div class="cal-actions"><button class='btn-success' id='calEditBtn'>Editar</button><button class='btn-outline' id='calCloneBtn'>Clonar</button><button class='btn-danger' id='calDeleteBtn'>Eliminar</button></div>`;
                             content.appendChild(actions);
                             document.getElementById('calEditBtn').onclick = () => editCalendarEntry(dateStr);
                             document.getElementById('calCloneBtn').onclick = () => openCloneModal(dateStr);
+                            document.getElementById('calDeleteBtn').onclick = () => deleteCalendarEntry(dateStr);
                         } else {
                             actions.innerHTML = `<div style="display:flex; gap:8px;"><button class='btn-primary' id='calCreateBtn'>Crear Sesión</button></div>`;
                             content.appendChild(actions);
@@ -1515,6 +1531,20 @@
                 saveData(); renderCalendar(); renderHistoryList();
                 window.closeCloneModal();
                 alert('Clonado correctamente a ' + targetStr);
+            };
+
+            // Delete calendar entry for a given date
+            window.deleteCalendarEntry = function(dateStr) {
+                const idx = workoutHistory.findIndex(h => h.date === dateStr);
+                if (idx === -1) { alert('No existe entrada para esa fecha'); return; }
+                if (!confirm('¿Eliminar la sesión del ' + dateStr + '?')) return;
+                workoutHistory.splice(idx, 1);
+                saveData();
+                renderCalendar();
+                renderHistoryList();
+                // Hide details panel
+                const detailBox = document.getElementById('calendarDayDetails'); if (detailBox) detailBox.classList.add('hidden');
+                alert('Sesión eliminada');
             };
 
             function showCalendarDayDetails(dateStr, workout) {
@@ -1581,18 +1611,69 @@
                     if(!confirm('No tienes rutinas. ¿Crear una nueva rutina ahora?')) return;
                     hideAllViews(); document.getElementById('editorView').classList.remove('hidden'); return;
                 }
-                // Ask the user to pick a routine by index
-                let msg = 'Selecciona rutina para basar la sesión (escribe el número):\n';
-                allRoutines.forEach((r, i) => { msg += `${i}: ${r.name}\n`; });
-                const resp = prompt(msg, '0');
-                if (resp === null) return; // cancelled
-                const idx = parseInt(resp);
-                if (isNaN(idx) || idx < 0 || idx >= allRoutines.length) { alert('Índice inválido'); return; }
-
-                calendarEditDate = dateStr;
-                // Open session setup for that routine so user can choose session and start
-                setupSession(idx);
+                // Open modal to choose routine & session
+                openCreateSessionModal(dateStr);
             }
+
+            // OPEN / CLOSE Create Session modal
+            window.openCreateSessionModal = function(dateStr) {
+                window._createSessionDate = dateStr;
+                const modal = document.getElementById('createSessionModal');
+                const dateEl = document.getElementById('createSessionDate');
+                const routineSel = document.getElementById('createSessionRoutineSelect');
+                const sessionSel = document.getElementById('createSessionSessionSelect');
+                if (!modal || !routineSel || !sessionSel) return;
+                dateEl.innerText = `Fecha: ${dateStr}`;
+                routineSel.innerHTML = '';
+                allRoutines.forEach((r, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = r.name; routineSel.appendChild(opt); });
+                // populate sessions for selected routine
+                const populateSessions = () => {
+                    const idx = parseInt(routineSel.value);
+                    sessionSel.innerHTML = '';
+                    const routine = allRoutines[idx];
+                    if (routine && Array.isArray(routine.sessions)) {
+                        routine.sessions.forEach((s, si) => { const opt = document.createElement('option'); opt.value = si; opt.innerText = s.name; sessionSel.appendChild(opt); });
+                    } else {
+                        const opt = document.createElement('option'); opt.value = 0; opt.innerText = 'General'; sessionSel.appendChild(opt);
+                    }
+                };
+                routineSel.onchange = populateSessions;
+                // init
+                if (allRoutines.length > 0) { routineSel.value = 0; populateSessions(); }
+                modal.classList.remove('hidden');
+            };
+
+            window.closeCreateSessionModal = function() {
+                const modal = document.getElementById('createSessionModal'); if (modal) modal.classList.add('hidden');
+                window._createSessionDate = null;
+            };
+
+            window.createSessionFromModal = function() {
+                const routineSel = document.getElementById('createSessionRoutineSelect');
+                const sessionSel = document.getElementById('createSessionSessionSelect');
+                if (!routineSel || !sessionSel) return alert('Selector no disponible');
+                const rIdx = parseInt(routineSel.value);
+                const sIdx = parseInt(sessionSel.value);
+                if (isNaN(rIdx) || rIdx < 0 || rIdx >= allRoutines.length) return alert('Rutina inválida');
+                const routine = allRoutines[rIdx];
+                const session = (routine.sessions && routine.sessions[sIdx]) ? routine.sessions[sIdx] : null;
+                if (!session) return alert('Sesión inválida');
+
+                calendarEditDate = window._createSessionDate || new Date().toLocaleDateString();
+                currentRoutineIndex = rIdx;
+                currentSessionExercises = session.exercises.slice();
+                currentSessionName = session.name || '';
+
+                // Open session form directly
+                hideAllViews();
+                document.getElementById('sessionView').classList.remove('hidden');
+                document.getElementById('sessionSetup').classList.add('hidden');
+                document.getElementById('sessionForm').classList.remove('hidden');
+                renderSessionCards(currentSessionExercises, null);
+                requestWakeLock();
+                pushAppState('session', { index: currentRoutineIndex });
+                window.closeCreateSessionModal();
+            };
 
             // --- INYECTAR EJERCICIOS POR DEFECTO ---
             function injectDefaultExercises() {
