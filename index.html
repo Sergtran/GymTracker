@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gym Tracker V33.0 Cloud ☁️</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- GENERAL STYLES --- */
+        :root {
+            /* Design tokens */
+            --radius: 10px;
+            --card-shadow: 0 6px 20px rgba(16,24,40,0.12);
+            --elevated-shadow: 0 10px 30px rgba(2,6,23,0.18);
+            --focus-ring: rgba(0,123,255,0.12);
+            --muted: #6c757d;
+
+            --bg-body: #f0f2f5;
+            --bg-container: #ffffff;
+            --text-main: #333333;
+            --border-color: #cccccc;
+            --bg-input: #ffffff;
+            --bg-card: #f8f9fa;
+            --bg-header: #e9ecef;
+            --text-header: #495057;
+            --color-primary: #007bff;
+            --bg-highlight: #fff3cd;
+            --border-highlight: #ffc107;
+            --bg-note: #cce5ff;
+            --border-note: #004085;
+            --text-note: #004085;
+            --bg-calendar-day: #ffffff;
+            --bg-calendar-today: #fff3cd;
+            --bg-calendar-active: #d4edda;
+            --color-calendar-active: #155724;
+
+            /* TIMER COLORS - High visibility */
+            --timer-bg: #222;
+            --timer-text: #fff;
+            --timer-work: #00c851; /* Vivid Green */
+            --timer-rest: #ff4444; /* Vivid Red */
+            --timer-prep: #ffbb33; /* Vivid Yellow/Orange */
+        }
+
+        
+        body.dark-mode {
+            --bg-body: #121212;
+            --bg-container: #1e1e1e;
+            --text-main: #e0e0e0;
+            --border-color: #444444;
+            --bg-input: #2d2d2d;
+            --bg-card: #252525;
+            --bg-header: #333333;
+            --text-header: #e0e0e0;
+            --color-primary: #4dabf7;
+            --bg-highlight: #3e3700;
+            --border-highlight: #ffd43b;
+            --bg-note: #002a4d;
+            --border-note: #4dabf7;
+            --text-note: #e0e0e0;
+            --bg-calendar-day: #2d2d2d;
+            --bg-calendar-today: #3e3700;
+            --bg-calendar-active: #053612;
+            --color-calendar-active: #75b798;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body); color: var(--text-main);
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; margin: 0; padding: 10px;
+            transition: background-color 0.3s, color 0.3s;
+            padding-bottom: 80px; 
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .app-container {
+            background-color: var(--bg-container); 
+            padding: 20px; 
+            padding-top: 60px; /* Space for theme toggle */
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow); width: 100%; max-width: 720px;
+            margin-bottom: 50px; position: relative;
+        }
+
+        h2 { text-align: center; margin-top: 10px; padding: 0 10px; color: inherit; font-weight:700; letter-spacing:0.2px; }
+        .btn-row { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 15px; align-items: center; }
+        /* Exercise list improvements */
+        .exercise-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .exercise-meta { display: flex; flex-direction: column; gap:6px; max-width:70%; }
+        .exercise-actions { display: flex; gap: 8px; align-items: center; }
+        .icon-btn { width: 38px; height: 34px; border-radius: 8px; display: inline-flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; border:none; }
+        .icon-btn.note { background: var(--bg-header); color: var(--text-main); border:1px solid var(--border-color); }
+        .icon-btn.edit { background: var(--color-primary); color: white; }
+        .icon-btn.delete { background: #dc3545; color: white; }
+        .exercise-title { font-weight:700; font-size:1.05em; color:var(--color-primary); }
+        h3, h4 { text-align: center; margin-top: 0; color: inherit; }
+        .hidden { display: none !important; }
+
+        input, select, textarea {
+            width: 100%; padding: 10px 12px; margin-bottom: 10px;
+            border: 1px solid var(--border-color); border-radius: var(--radius); box-sizing: border-box;
+            background-color: var(--bg-input); color: var(--text-main); font-size: 15px;
+            transition: box-shadow 0.18s ease, border-color 0.12s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--color-primary);
+            box-shadow: 0 6px 18px var(--focus-ring);
+        }
+        
+        button {
+            width: 100%; padding: 12px; border: none; border-radius: var(--radius);
+            cursor: pointer; font-size: 15px; margin-bottom: 8px; color: white;
+            font-weight: 700; transition: transform 0.08s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+            touch-action: manipulation; box-shadow: 0 4px 12px rgba(2,6,23,0.06);
+        }
+        button:active { transform: translateY(1px) scale(0.998); opacity:0.98; }
+        button:hover { box-shadow: var(--elevated-shadow); }
+
+        /* Icon buttons inside lists should not expand full width */
+        button.icon-btn { width: 38px !important; padding: 6px !important; height: 34px !important; }
+
+        .btn-primary { background-color: #007bff; }
+        .btn-success { background-color: #28a745; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-info { background-color: #17a2b8; }
+        .btn-purple { background-color: #6f42c1; }
+        .btn-dark { background-color: #343a40; }
+        .btn-google { background-color: #4285F4; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .session-util-btn {
+            font-size: 14px; padding: 8px; border: 1px solid var(--border-color); 
+            margin-top: 5px; flex: 1; border-radius: 6px;
+            background-color: var(--bg-header); color: var(--text-main);
+        }
+        .btn-small { width: auto; padding: 6px 12px; font-size: 13px; margin-left: 3px; border-radius: 8px; }
+        .btn-outline { background: transparent; border: 1px solid var(--text-main); color: var(--text-main); padding: 4px 10px; font-size: 0.9em; width: auto; margin:0;}
+
+        .theme-toggle {
+            position: absolute; top: 10px; right: 15px; z-index: 100;
+            background: transparent; border: 1px solid var(--border-color);
+            color: var(--text-main); width: 40px; height: 40px;
+            border-radius: 50%; font-size: 20px; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Header action styles */
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 8px; }
+
+        /* --- SET ROW ADAPTED --- */
+        .set-row { display: flex; gap: 5px; align-items: center; margin-bottom: 8px; }
+        .set-row label { width: 20px; font-size: 0.85em; font-weight: bold; color: var(--text-main); opacity: 0.7; }
+        
+        .input-reps { width: 22% !important; text-align: center; font-weight: bold; }
+        .input-kg { background-color: rgba(0, 255, 0, 0.05); color: var(--text-main); }
+        .input-lbs { background-color: rgba(0, 0, 255, 0.05); color: var(--text-main); }
+        .input-kg, .input-lbs { width: 34% !important; text-align: center; }
+
+        .input-work-sec, .input-work-min, .input-rest-sec, .input-rest-min {
+            width: 23% !important; text-align: center; font-size: 0.9em; padding: 10px 5px !important;
+        }
+        .input-work-sec, .input-work-min { background-color: rgba(23, 162, 184, 0.1); border-color: #17a2b8; color: var(--text-main); }
+        .input-rest-sec, .input-rest-min { background-color: rgba(108, 117, 125, 0.1); border-color: #6c757d; color: var(--text-main); }
+
+        .hide-weight .input-kg, .hide-weight .input-lbs { display: none; }
+        .hide-weight .input-reps { width: 80% !important; } 
+        
+        ul { list-style-type: none; padding: 0; margin-top: 15px; }
+        li {
+            background-color: var(--bg-container); border-bottom: 1px solid var(--border-color);
+            padding: 15px 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        .cycle-panel { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 18px; border-radius: calc(var(--radius) + 2px); margin-bottom: 15px; box-shadow: var(--elevated-shadow); }
+        .prev-cycle-panel { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; padding: 15px; border-radius: calc(var(--radius) + 2px); margin-bottom: 15px; font-size: 0.9em; box-shadow: var(--card-shadow); }
+        .exercise-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 14px; margin-bottom: 15px; box-shadow: 0 6px 18px rgba(2,6,23,0.04); }
+        .progress-track { background-color: rgba(255,255,255,0.3); height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 15px; }
+        .progress-fill { background-color: #ffc107; height: 100%; width: 0%; transition: width 0.5s ease; }
+        
+        .last-stat-box, .last-performance { font-size: 0.9em; color: var(--text-main); background-color: var(--bg-highlight); padding: 10px; border-radius: 6px; border-left: 4px solid var(--border-highlight); margin-bottom: 8px; margin-top: 8px; }
+        .saved-note-box { font-size: 0.95em; color: var(--text-note); background-color: var(--bg-note); padding: 12px; border-radius: 6px; border-left: 4px solid var(--border-note); margin-bottom: 10px; margin-top: 5px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .day-header { background-color: var(--bg-header); color: var(--text-header); padding: 12px; border-radius: 8px; margin-top: 20px; margin-bottom: 10px; text-align: left; font-weight: bold; border-left: 5px solid var(--color-primary); }
+
+        .dropdown-container { background-color: var(--bg-container); border: 1px solid var(--border-color); padding: 10px; margin-top: 5px; border-radius: calc(var(--radius) - 2px); }
+        .mini-chart-box { position: relative; height: 200px; width: 100%; }
+
+        .badge-pr { background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); color: #000; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; font-weight: bold; margin-left: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); vertical-align: middle; }
+        .badge-match { background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%); color: #333; padding: 3px 8px; border-radius: 6px; font-size: 0.75em; font-weight: bold; margin-left: 5px; vertical-align: middle; }
+        .badge-type { font-size: 0.75em; padding: 2px 6px; border-radius: 4px; background: var(--bg-header); border: 1px solid var(--border-color); margin-left: 5px; vertical-align: middle;}
+
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 20px; }
+        .cal-day-name { text-align: center; font-weight: bold; font-size: 0.8em; opacity: 0.7; padding-bottom: 5px; }
+        .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background-color: var(--bg-calendar-day); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9em; cursor: pointer; position: relative; }
+        .cal-day.today { background-color: var(--bg-calendar-today); border-color: var(--border-highlight); font-weight: bold; }
+        .cal-day.has-workout { background-color: var(--bg-calendar-active); color: var(--color-calendar-active); font-weight: bold; border-color: var(--color-calendar-active); }
+        .cal-day.selected { border: 2px solid var(--color-primary); transform: scale(1.05); z-index: 2; }
+        .cal-marker { position: absolute; bottom: 4px; width: 5px; height: 5px; background-color: currentColor; border-radius: 50%; }
+
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { border: 6px solid #333; border-top: 6px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #cloudStatus { 
+            position: fixed; 
+            bottom: 20px; left: 50%; transform: translateX(-50%); 
+            font-size: 0.85em; color: #28a745; font-weight: bold; 
+            background: var(--bg-container); padding: 8px 15px; border-radius: 30px; 
+            opacity: 0; transition: opacity 0.5s; z-index: 2000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 1px solid var(--border-color);
+        }
+        
+        #resumeBadge { background-color: #ffc107; color: #333; padding: 5px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; display: none; margin-bottom: 10px; text-align: center; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(2,6,23,0.5); z-index: 3000;
+            display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+        }
+        .modal-content {
+            background: var(--bg-container);
+            padding: 18px; border-radius: var(--radius); width: 100%; max-width: 520px;
+            box-shadow: var(--elevated-shadow); border: 1px solid var(--border-color);
+            position: relative; margin: 0; align-self: center;
+        }
+
+        /* --- LOGIN OVERLAY --- */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-body); z-index: 5000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; text-align: center;
+            box-sizing: border-box; 
+        }
+        .login-card {
+            background: var(--bg-container);
+            padding: 30px; border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 350px; width: 100%;
+            border: 1px solid var(--border-color);
+        }
+
+        /* --- TIMER STYLES --- */
+        .timer-widget {
+            position: fixed;
+            bottom: 80px; right: 20px;
+            width: 60px; height: 60px;
+            background-color: var(--timer-bg);
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 3000;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--timer-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border: 2px solid #555;
+            user-select: none;
+            -webkit-user-select: none; 
+        }
+
+        .timer-widget.expanded {
+            width: 260px; height: auto;
+            border-radius: 15px; flex-direction: column;
+            padding: 15px; bottom: 20px; right: 50%;
+            transform: translateX(50%); cursor: default;
+        }
+
+        /* Make smaller UI elements a bit more compact */
+        .badge-type { padding: 2px 6px; font-size: 0.72em; }
+
+        .timer-minimized-content { display: flex; flex-direction: column; align-items: center; font-size: 0.7em; font-weight: bold; pointer-events: none; }
+        .timer-icon { font-size: 1.5em; }
+        .timer-expanded-content { width: 100%; text-align: center; display: none; }
+        .timer-widget.expanded .timer-minimized-content { display: none; }
+        .timer-widget.expanded .timer-expanded-content { display: block; }
+
+        .timer-display-big { font-size: 3em; font-family: monospace; font-weight: bold; margin: 10px 0; line-height: 1; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+        .timer-status-text { font-size: 1em; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        
+        .timer-controls { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
+        .btn-timer { padding: 10px; flex: 1; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        
+        .status-prep { background-color: var(--timer-prep) !important; color: #000 !important; border-color: #cc9a06 !important; }
+        .status-prep .timer-status-text { color: #000; }
+        
+        .status-work { background-color: var(--timer-work) !important; color: #fff !important; border-color: #007e33 !important; }
+        .status-work .timer-status-text { color: #fff; }
+        
+        .status-rest { background-color: var(--timer-rest) !important; color: #fff !important; border-color: #c00 !important; }
+        .status-rest .timer-status-text { color: #fff; }
+        
+        .status-stopped { background-color: var(--timer-bg); border-color: #777; }
+
+        .timer-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .timer-config-item label { display: block; font-size: 0.8em; margin-bottom: 2px; }
+
+        .timer-widget:active { transform: scale(0.95) translateX(50%); } 
+        .timer-widget:not(.expanded):active { transform: scale(0.95); }
+
+        /* Responsive tweaks for editor session selector on small screens */
+        @media (max-width: 480px) {
+            .editor-session-row { display:flex; flex-direction:column; gap:6px; }
+            .editor-session-select-row select { width: 100% !important; display: block; }
+            .editor-session-controls { display:flex; gap:8px; }
+            .editor-session-controls input { flex:1; }
+            .editor-session-controls .btn-primary, .editor-session-controls .btn-danger { min-width: 80px; }
+            /* Ensure native select dropdown appears above other elements */
+            .editor-session-select-row select { position: relative; z-index: 1000; }
+        }
+
+        /* Desktop: ensure select takes full row and controls on next line */
+        .editor-session-select-row select { width: 100%; }
+        .editor-session-controls input { width: auto; }
+
+    </style>
+
+    <script>
+        /* --- DEFAULT EXERCISES CATALOG --- */
+    const DEFAULT_EXERCISES = {
+
+        // =========================
+        // PUSH (Chest / Shoulders / Triceps)
+        // =========================
+        "Press de Banca": "standard",
+        "Press de Banca Inclinado": "standard",
+        "Press de Banca Declinado": "standard",
+        "Press con Mancuernas": "standard",
+        "Press Inclinado con Mancuernas": "standard",
+        "Press en Máquina": "standard",
+        "Press Hammer Strength": "standard",
+        "Chest Press en Máquina": "standard",
+        "Aperturas con Mancuernas": "standard",
+        "Aperturas en Máquina": "standard",
+        "Aperturas en Poleas": "standard",
+        "Peck Deck": "standard",
+
+        "Press Militar con Barra": "standard",
+        "Press Militar con Mancuernas": "standard",
+        "Press Militar en Máquina": "standard",
+        "Arnold Press": "standard",
+        "Push Press": "standard",
+
+        "Elevaciones Laterales": "standard",
+        "Elevaciones Laterales en Máquina": "standard",
+        "Elevaciones Frontales": "standard",
+        "Pájaros (Deltoide Posterior)": "standard",
+        "Reverse Peck Deck": "standard",
+
+        "Fondos en Paralelas": "bw",
+        "Fondos en Máquina Asistida": "standard",
+        "Fondos en Banco": "bw",
+
+        "Flexiones": "bw",
+        "Flexiones Diamante": "bw",
+        "Flexiones Declive": "bw",
+
+        "Extensión de Tríceps en Polea": "standard",
+        "Extensión de Tríceps con Cuerda": "standard",
+        "Extensión de Tríceps en Máquina": "standard",
+        "Extensión Overhead con Mancuerna": "standard",
+        "Tríceps Francés": "standard",
+        "Press Cerrado": "standard",
+
+        // =========================
+        // PULL (Back / Biceps)
+        // =========================
+        "Dominadas Pronadas": "bw",
+        "Dominadas Supinas (Chin Up)": "bw",
+        "Dominadas Neutras": "bw",
+        "Dominadas en Máquina Asistida": "standard",
+        "Jalón al Pecho": "standard",
+        "Jalón Agarre Cerrado": "standard",
+        "Jalón Unilateral": "standard",
+
+        "Remo con Barra": "standard",
+        "Remo Pendlay": "standard",
+        "Remo con Mancuernas": "standard",
+        "Remo en Polea Baja": "standard",
+        "Remo en Máquina": "standard",
+        "Remo Hammer Strength": "standard",
+        "Remo T-Bar": "standard",
+        "Remo Alto en Polea": "standard",
+
+        "Pullover en Máquina": "standard",
+        "Pullover en Polea": "standard",
+        "Face Pull": "standard",
+
+        "Curl de Bíceps con Barra": "standard",
+        "Curl de Bíceps con Mancuernas": "standard",
+        "Curl Martillo": "standard",
+        "Curl en Máquina": "standard",
+        "Curl Predicador": "standard",
+        "Curl Scott": "standard",
+        "Curl en Polea": "standard",
+
+        // =========================
+        // LEGS (Máquinas + Libres)
+        // =========================
+        "Sentadilla Trasera": "standard",
+        "Sentadilla Frontal": "standard",
+        "Sentadilla Goblet": "standard",
+
+        "Sentadilla Hack": "standard",
+        "Sentadilla Hack Inversa": "standard",
+        "Sentadilla en Máquina": "standard",
+        "Sentadilla Smith": "standard",
+
+        "Prensa de Piernas 45°": "standard",
+        "Prensa de Piernas Horizontal": "standard",
+        "Prensa de Piernas Unilateral": "standard",
+
+        "Peso Muerto Convencional": "standard",
+        "Peso Muerto Sumo": "standard",
+        "Peso Muerto Rumano": "standard",
+        "Peso Muerto en Máquina": "standard",
+
+        "Hip Thrust con Barra": "standard",
+        "Hip Thrust en Máquina": "standard",
+
+        "Zancadas Caminando": "standard",
+        "Zancadas Estáticas": "standard",
+        "Zancadas Reversas": "standard",
+        "Zancadas en Smith": "standard",
+
+        "Extensiones de Cuádriceps": "standard",
+        "Curl Femoral Acostado": "standard",
+        "Curl Femoral Sentado": "standard",
+        "Curl Femoral de Pie": "standard",
+
+        "Aductores en Máquina": "standard",
+        "Abductores en Máquina": "standard",
+
+        "Elevación de Gemelos de Pie": "standard",
+        "Elevación de Gemelos Sentado": "standard",
+        "Gemelos en Prensa": "standard",
+
+        // =========================
+        // CORE / ABS (Máquinas incluidas)
+        // =========================
+        "Crunch Abdominal": "bw",
+        "Crunch en Máquina": "standard",
+        "Crunch en Polea": "standard",
+        "Crunch Declinado": "bw",
+
+        "Plancha Abdominal": "time",
+        "Plancha Lateral": "time",
+        "Plancha con Peso": "time",
+
+        "Elevaciones de Piernas": "bw",
+        "Elevaciones de Piernas Colgado": "bw",
+        "Ab Wheel": "bw",
+
+        // =========================
+        // CARDIO / CONDITIONING (GYM)
+        // =========================
+        "Saltar Cuerda": "time",
+        "Burpees": "bw",
+        "Jump Squats": "bw",
+
+        "Caminadora": "time",
+        "Bicicleta Estática": "time",
+        "Bicicleta Reclinada": "time",
+        "Elíptica": "time",
+        "Escaladora": "time",
+        "Remo Ergómetro": "time",
+        "Assault Bike": "time",
+
+        // =========================
+        // ISOMÉTRICOS / HOLDS
+        // =========================
+        "Wall Sit": "time",
+        "Dead Hang": "time",
+        "Farmer Walk": "time"
+    };
+    </script>
+
+</head>
+<body>
+
+    <div id="loginOverlay">
+        <div class="login-card">
+            <h1 style="margin-bottom:10px;">Gym Tracker</h1>
+            <p style="color:var(--text-header); margin-bottom:20px;">Entrenamientos en la Nube ☁️</p>
+            <button type="button" class="btn-google" id="btnGoogleLogin">
+                <span style="background:white; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; color:black; font-weight:bold;">G</span>
+                Entrar con Google
+            </button>
+            <p style="font-size:0.8em; margin-top:15px; color:#666;">Tus datos se guardarán de forma segura en tu cuenta.</p>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="hidden">
+        <div class="spinner"></div>
+        <h3 id="loadingText" style="margin-top: 20px;">Cargando Datos...</h3>
+    </div>
+
+    <div id="timerConfigModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-top:6px;">⚙️ Configurar Timer</h3>
+            <div class="timer-config-grid">
+                <div class="timer-config-item">
+                    <label>Prep (seg)</label>
+                    <input type="number" id="cfgPrep" value="10">
+                </div>
+                <div class="timer-config-item">
+                    <label>Sets (#)</label>
+                    <input type="number" id="cfgSets" value="5">
+                </div>
+                <div class="timer-config-item">
+                    <label>Work (seg)</label>
+                    <input type="number" id="cfgWork" value="40">
+                </div>
+                <div class="timer-config-item">
+                    <label>Rest (seg)</label>
+                    <input type="number" id="cfgRest" value="20">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-secondary" onclick="window.closeTimerConfig()">Cancelar</button>
+                <button class="btn-primary" onclick="window.saveTimerConfig()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="noteModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-top:6px;">📝 Nota de Ejercicio</h3>
+            <div>
+                <label style="font-size:0.9em;">Nota:</label>
+                <textarea id="modalNoteText" style="width:100%; min-height:120px; padding:8px; border-radius:8px; border:1px solid var(--border-color);"></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:12px; justify-content:flex-end;">
+                <button class="btn-secondary" onclick="window.closeNoteModal()">Cancelar</button>
+                <button class="btn-success" onclick="window.saveNoteFromModal()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-top:6px;">Editar Ejercicio</h3>
+            <label style="font-size:0.9em;">Nombre:</label>
+            <input type="text" id="modalEditName">
+            
+            <label style="font-size:0.9em; margin-top:8px;">Tipo:</label>
+            <select id="modalEditType">
+                <option value="standard">🏋️ Peso Estándar</option>
+                <option value="bw">🤸 Peso Corporal</option>
+                <option value="weighted">➕ Peso + Lastre</option>
+                <option value="time">⏱️ Tiempo / Intervalo</option>
+            </select>
+
+            <label style="font-size:0.9em; margin-top:8px;">Ejecución:</label>
+            <select id="modalEditExecution">
+                <option value="bilateral">Bilateral</option>
+                <option value="unilateral">Unilateral</option>
+            </select>
+            
+            <div style="display:flex; gap:10px; margin-top:15px; justify-content:flex-end;">
+                <button class="btn-secondary" onclick="window.closeEditModal()">Cancelar</button>
+                <button class="btn-success" onclick="window.saveEditExercise()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="floatingTimer" class="timer-widget status-stopped hidden">
+        
+        <div class="timer-minimized-content">
+            <span class="timer-icon">⏱️</span>
+            <span id="miniTimerDisplay" style="font-size:0.9em;">00:00</span>
+        </div>
+
+        <div class="timer-expanded-content">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span id="timerPhaseLabel" class="timer-status-text">READY</span>
+                <button style="background:transparent; border:none; color:inherit; font-size:1.4em; padding:0; width:auto; opacity:0.8;" onclick="window.minimizeTimer(event)">🔽</button>
+            </div>
+            
+            <div id="mainTimerDisplay" class="timer-display-big">00:00</div>
+            
+            <div style="font-size:0.9em; opacity:0.9; margin-bottom:5px;">
+                Set: <span id="timerSetDisplay">1</span> / <span id="timerTotalSetsDisplay">5</span>
+            </div>
+
+            <div class="timer-controls">
+                <button class="btn-timer" style="background-color:rgba(0,0,0,0.3);" onclick="window.prevTimerPhase()">⏮️</button>
+                <button id="btnTimerToggle" class="btn-timer" style="background-color:rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5);" onclick="window.toggleTimerState()">▶️</button>
+                <button class="btn-timer" style="background-color:rgba(0,0,0,0.3);" onclick="window.skipTimerPhase()">⏭️</button>
+            </div>
+            <div style="font-size:0.7em; opacity:0.7; margin-top:5px;">Mantén presionado para cerrar</div>
+        </div>
+    </div>
+
+    <div class="app-container hidden" id="mainAppContainer">
+        <button class="theme-toggle" id="btnThemeToggle" onclick="window.toggleTheme()">🌙</button>
+        <div id="cloudStatus">☁️ Guardado</div>
+
+        <div id="menuView">
+            <h2>Gym Tracker <span style="color:var(--color-primary)">V33.0</span></h2>
+            
+            <div id="activeCyclePanel" class="cycle-panel hidden">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span style="font-weight:bold; font-size:1.1em;">🔥 Activo: <span id="lblActiveRoutineName"></span></span>
+                    <span>Sem <span id="lblCurrentWeek">1</span>/4</span>
+                </div>
+                <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-warning" style="color:#333; margin:0;" id="btnAdvanceWeek">Semana (+)</button>
+                    <button class="btn-danger" style="margin:0;" id="btnStopCycle">Fin</button>
+                </div>
+            </div>
+
+            <div id="prevCyclePanel" class="prev-cycle-panel hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>🏆 <b>Previo:</b> <span id="lblPrevRoutineName"></span></span>
+                    <span><span id="lblPrevWeeks"></span> sems</span>
+                </div>
+            </div>
+
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+                 <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="margin:0;">⚙️ Interval Timer:</label>
+                    <button class="btn-outline" style="width:auto;" onclick="window.openTimerConfig()">Configurar</button>
+                 </div>
+                 <div style="font-size:0.8em; color:gray; margin-top:5px;" id="timerConfigSummary">
+                     Prep: 10s | Work: 40s | Rest: 20s
+                 </div>
+            </div>
+
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+                <label>Nueva Rutina:</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="newRoutineName" placeholder="Nombre Rutina" style="margin-bottom: 0;">
+                    <button class="btn-success" style="width: 80px; margin-bottom: 0;" id="btnCreateRoutine">Crear</button>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button class="btn-info" id="btnShowHistory">Estadísticas 📈</button>
+                <button class="btn-purple" id="btnShowCalendar">Calendario 📅</button>
+            </div>
+            
+            <h3>Mis Rutinas</h3>
+            <ul id="routinesList"></ul>
+
+            <div style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <button class="btn-secondary" style="background-color:#555;" onclick="window.doLogout()">Cerrar Sesión 🔒</button>
+            </div>
+        </div>
+
+        <div id="editorView" class="hidden">
+            <div class="btn-row">
+                <button class="btn-secondary" style="width: auto;" id="btnBackFromEditor">Atrás</button>
+                <span style="font-weight: bold; align-self:center;">Editar Plan</span>
+            </div>
+
+            <div style="background:var(--bg-header); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border-color);">
+                <label style="font-size:0.8em; font-weight:bold; opacity:0.8;">Nombre de la Rutina:</label>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <input type="text" id="editRoutineNameInput" style="margin-bottom:0;" placeholder="Nombre...">
+                    <button class="btn-success" style="width:auto; margin-bottom:0; min-width:80px;" onclick="window.saveRoutineRename()">Guardar</button>
+                </div>
+            </div>
+
+            <div class="editor-session-row" style="margin-bottom:10px;">
+                <div class="editor-session-select-row">
+                    <select id="editorSessionSelector"></select>
+                </div>
+                <div class="editor-session-controls" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                    <input type="text" id="editorSessionInput" placeholder="Nuevo nombre sesión" style="flex:1; min-width:120px;">
+                    <button class="btn-primary btn-small" style="padding:8px; min-width:80px;" id="btnAddSession">Añadir</button>
+                    <button class="btn-danger btn-small" style="padding:8px; min-width:60px;" id="btnDeleteSession">X</button>
+                </div>
+            </div>
+            
+            <label style="font-size:0.9em; opacity:0.8;">Tipo de Ejercicio:</label>
+            <select id="exerciseTypeSelector" style="margin-bottom: 5px;">
+                <option value="standard">🏋️ Peso Estándar (Reps + Kg)</option>
+                <option value="bw">🤸 Peso Corporal (Solo Reps)</option>
+                <option value="weighted">➕ Peso Corp. + Lastre (Reps + Kg Extra)</option>
+                <option value="time">⏱️ Tiempo / Intervalo</option>
+            </select>
+
+            <label style="font-size:0.9em; opacity:0.8;">Ejecución:</label>
+            <select id="exerciseExecutionSelector" style="margin-bottom: 5px;">
+                <option value="bilateral">Bilateral</option>
+                <option value="unilateral">Unilateral</option>
+            </select>
+
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="exerciseInput" list="exerciseSuggestions" placeholder="Nombre Ejercicio..." style="margin-bottom: 0;">
+                <datalist id="exerciseSuggestions"></datalist>
+                <button class="btn-primary" style="width: 80px; margin-bottom: 0;" id="btnAddExercise">Añadir</button>
+            </div>
+            <ul id="editorList"></ul>
+
+            <script>
+                // Normalize exercise entries to support execution attribute
+                function normalizeExerciseEntry(exercise) {
+                    if (typeof exercise === 'string') {
+                        return { name: exercise, execution: 'bilateral' }; // Default execution
+                    }
+                    return exercise;
+                }
+            </script>
+        </div>
+
+        <div id="sessionView" class="hidden">
+            <div class="btn-row">
+                <button class="btn-secondary" style="width: auto;" id="btnCancelSession">Salir</button>
+                <span style="font-weight: bold; align-self:center;">Entrenando</span>
+                <button class="btn-outline" style="width: auto;" onclick="window.activateTimer()">⏱️ Timer</button>
+            </div>
+            <div id="sessionSetup">
+                <h3>Elige la sesión:</h3>
+                <select id="sessionSessionSelector"></select>
+                <button class="btn-success" style="padding:15px; font-size:1.1em;" id="btnStartWorkout">¡COMENZAR!</button>
+            </div>
+            <div id="sessionForm" class="hidden">
+                <div id="resumeBadge">✏️ MODO EDICIÓN: Retomando sesión de hoy</div>
+                <div id="workoutInputsContainer"></div>
+                <button class="btn-success" style="margin-top: 25px; padding: 18px; font-size:1.1em;" id="btnFinishSession">GUARDAR SESIÓN 💾</button>
+            </div>
+        </div>
+
+        <div id="historyView" class="hidden">
+            <div class="btn-row">
+                <button class="btn-secondary" style="width: auto;" id="btnBackFromHistory">Atrás</button>
+                <span style="font-weight: bold; align-self:center;">Estadísticas</span>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                <select id="graphExerciseSelector"><option value="">-- Selecciona ejercicio --</option></select>
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+            <ul id="historyList"></ul>
+        </div>
+
+        <div id="routineDetailView" class="hidden">
+            <div class="btn-row">
+                <button class="btn-secondary" style="width: auto;" id="btnBackFromDetail">Atrás</button>
+                <span id="detailTitle" style="font-weight: bold; align-self:center;">Detalles</span>
+            </div>
+            <div id="detailContainer"></div>
+        </div>
+
+        <div id="calendarView" class="hidden">
+            <div class="btn-row">
+                <button class="btn-secondary" style="width: auto;" id="btnBackFromCalendar">Atrás</button>
+                <span style="font-weight: bold; align-self:center;">Calendario</span>
+            </div>
+            <div class="calendar-header">
+                <button class="btn-outline" id="btnPrevMonth" style="width:40px;">◀</button>
+                <span id="calendarTitle" style="font-weight:bold; font-size:1.2em;"></span>
+                <button class="btn-outline" id="btnNextMonth" style="width:40px;">▶</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="cal-day-name">Do</div><div class="cal-day-name">Lu</div>
+                <div class="cal-day-name">Ma</div><div class="cal-day-name">Mi</div>
+                <div class="cal-day-name">Ju</div><div class="cal-day-name">Vi</div>
+                <div class="cal-day-name">Sa</div>
+                <div id="calendarDaysContainer" style="display:contents;"></div>
+            </div>
+            <div id="calendarDayDetails" class="hidden" style="background:var(--bg-card); padding:15px; border-radius:10px; border:1px solid var(--border-color);">
+                <h4 id="calDetailDate" style="border-bottom:1px solid var(--border-color); padding-bottom:5px;"></h4>
+                <div id="calDetailContent"></div>
+            </div>
+        </div>
+
+    </div>
+
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+            import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+            // --- AUTH IMPORTS ---
+            import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyCM5Q2wXQpfm2-ek4dfKk5pjtitYI0ySCk",
+                authDomain: "gymtracker-8d942.firebaseapp.com",
+                projectId: "gymtracker-8d942",
+                storageBucket: "gymtracker-8d942.firebasestorage.app",
+                messagingSenderId: "790719196344",
+                appId: "1:790719196344:web:c652ffd260b91ed7add84d"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            const provider = new GoogleAuthProvider();
+
+            // --- WAKE LOCK (ALWAYS ON SCREEN) ---
+            let wakeLock = null;
+
+            async function requestWakeLock() {
+                try {
+                    if ('wakeLock' in navigator) {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        wakeLock.addEventListener('release', () => {
+                            console.log('Screen Wake Lock released');
+                        });
+                        console.log('Screen Wake Lock acquired');
+                    }
+                } catch (err) {
+                    console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
+                }
+            }
+
+            async function releaseWakeLock() {
+                if (wakeLock !== null) {
+                    await wakeLock.release();
+                    wakeLock = null;
+                }
+            }
+
+            document.addEventListener('visibilitychange', async () => {
+                if (wakeLock !== null && document.visibilityState === 'visible') {
+                    await requestWakeLock();
+                }
+            });
+
+            // --- STATE ---
+            let allRoutines = [];
+            let workoutHistory = [];
+            let exerciseNotes = {}; 
+            let exerciseTypes = {}; 
+            let activeCycle = null;
+            let previousCycle = null;
+            let currentRoutineIndex = -1;
+            let editingHistoryIndex = null; 
+        
+            let tempEditDay = null;
+            let tempEditIndex = null;
+            let tempEditOldName = null;
+
+            let currentCalendarDate = new Date();
+            let mainChartInstance = null;
+            let detailChartInstances = {};
+            let sessionChartInstances = {};
+
+            // When creating/editing sessions from calendar we store the selected date here
+            let calendarSelectedDate = null;
+
+            // --- AUTH USER ID STATE ---
+            // Default to a local dummy if not logged in (wont be used if login enforced)
+            let currentUserUID = null; 
+            // OLD LOCAL KEY: const LOCAL_KEY = "gym_tracker_local_v31"; 
+            // We will make local key dynamic based on UID to support multi-user on same device if needed
+            let LOCAL_KEY = "gym_tracker_guest";
+
+            // --- TIMER STATE ---
+            let timerSettings = { prep: 10, sets: 5, work: 40, rest: 20 };
+            let timerIntervalId = null;
+            let timerState = {
+                running: false,
+                phase: 'stopped', 
+                currentSet: 1,
+                timeLeft: 0
+            };
+            let pressTimer = null;
+            let isLongPress = false;
+
+            const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            const dayTranslation = { "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo" };
+
+            // --- DARK MODE ---
+            window.toggleTheme = () => {
+                const body = document.body;
+                body.classList.toggle("dark-mode");
+                const isDark = body.classList.contains("dark-mode");
+                document.getElementById("btnThemeToggle").innerText = isDark ? "☀️" : "🌙";
+                localStorage.setItem("gymTheme", isDark ? "dark" : "light");
+                if(mainChartInstance) mainChartInstance.update();
+            }
+
+            function loadTheme() {
+                const saved = localStorage.getItem("gymTheme");
+                if (saved === "dark") {
+                    document.body.classList.add("dark-mode");
+                    document.getElementById("btnThemeToggle").innerText = "☀️";
+                }
+            }
+
+            // --- AUTH FUNCTIONS ---
+        
+            // Trigger Google Login (show loading overlay & better error handling)
+            window.loginWithGoogle = () => {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                const loadingText = document.getElementById('loadingText');
+                try {
+                    if (loadingOverlay) { loadingText.innerText = 'Abriendo Google...'; loadingOverlay.classList.remove('hidden'); }
+                    signInWithPopup(auth, provider)
+                    .then((result) => {
+                        // Success - onAuthStateChanged will handle the rest
+                        console.log('Login success:', result.user);
+                    }).catch((error) => {
+                        console.error('Login failed', error);
+                        alert('Error al iniciar sesión: ' + error.message);
+                        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                    });
+                } catch (err) {
+                    console.error('loginWithGoogle exception', err);
+                    alert('Error al iniciar sesión: ' + (err && err.message ? err.message : err));
+                    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                }
+            };
+
+            // Logout
+            window.doLogout = () => {
+                if(confirm("¿Cerrar sesión?")) {
+                    signOut(auth).then(() => {
+                        // Sign-out successful.
+                        location.reload(); // Reload to reset state cleanly
+                    }).catch((error) => {
+                        // An error happened.
+                    });
+                }
+            };
+
+            // --- DATA MANAGEMENT ---
+            function updateStatus(msg, isError = false) {
+                const el = document.getElementById("cloudStatus");
+                el.innerText = msg;
+                el.style.opacity = "1";
+                el.style.backgroundColor = isError ? "#f8d7da" : "var(--bg-container)";
+                el.style.color = isError ? "#721c24" : "#28a745";
+                if(!isError) setTimeout(() => { el.style.opacity = "0"; }, 3000); 
+            }
+
+            function saveDataLocal() {
+                if(!currentUserUID) return; // Don't save if not logged in
+                const data = {
+                    routines: allRoutines,
+                    history: workoutHistory,
+                    exerciseNotes: exerciseNotes,
+                    exerciseTypes: exerciseTypes, 
+                    activeCycle: activeCycle,
+                    previousCycle: previousCycle,
+                    timerSettings: timerSettings,
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+            }
+
+            async function saveData() {
+                if(!currentUserUID) return;
+                saveDataLocal();
+                if (navigator.onLine) {
+                    updateStatus("☁️ Sincronizando...");
+                    try {
+                        const data = JSON.parse(localStorage.getItem(LOCAL_KEY));
+                        // USE DYNAMIC UID HERE
+                        await setDoc(doc(db, "gym_app", currentUserUID), data);
+                        updateStatus("✅ Sincronizado");
+                    } catch (e) {
+                        console.error("Error sync:", e);
+                        updateStatus("📡 Offline (Guardado Local)");
+                    }
+                } else {
+                    updateStatus("📡 Offline (Guardado Local)");
+                }
+            }
+
+            async function loadData() {
+                if(!currentUserUID) return;
+    
+                // Set dynamic local key based on UID
+                LOCAL_KEY = `gym_tracker_${currentUserUID}`;
+
+                const localStr = localStorage.getItem(LOCAL_KEY);
+                if (localStr) {
+                    const data = JSON.parse(localStr);
+                    applyData(data);
+        
+                    injectDefaultExercises(); // <--- ADDED THIS (1) Merge with local data
+        
+                    renderUI();
+                }
+
+                if (navigator.onLine) {
+                    try {
+                        // USE DYNAMIC UID HERE
+                        const docSnap = await getDoc(doc(db, "gym_app", currentUserUID));
+                        if (docSnap.exists()) {
+                            const cloudData = docSnap.data();
+                            const localDate = localStr ? new Date(JSON.parse(localStr).lastUpdate || 0) : new Date(0);
+                            const cloudDate = new Date(cloudData.lastUpdate || 0);
+
+                            if (cloudDate > localDate) {
+                                console.log("Cloud newer, applying cloud data");
+                                applyData(cloudData);
+                    
+                                injectDefaultExercises(); // <--- ADDED THIS (2) Merge with cloud data
+                    
+                                saveDataLocal(); 
+                                renderUI();
+                                updateStatus("☁️ Datos actualizados");
+                            } else if(localDate > cloudDate) {
+                                console.log("Local newer, pushing to cloud");
+                                saveData(); 
+                            }
+                        } else {
+                            console.log("No cloud data found for this user, starting fresh/local");
+                
+                            // Optional: If it's a completely new user, give them defaults immediately
+                            injectDefaultExercises(); // <--- ADDED THIS (3) For new users
+                
+                            if(allRoutines.length === 0 && localStr) {
+                                 // If no routines in memory but local storage exists, UI already rendered
+                            } else if (allRoutines.length === 0) {
+                                 renderUI(); // Render empty UI
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error check cloud:", e);
+                    }
+                } else {
+                    if(allRoutines.length === 0) renderUI();
+                }
+            }
+
+            function applyData(data) {
+                const srcRoutines = data.routines || [];
+                allRoutines = srcRoutines.map(routine => {
+                    // If already sessions-based, keep
+                    if (routine.sessions && Array.isArray(routine.sessions)) return { name: routine.name, sessions: routine.sessions };
+                    // If old week-based, convert
+                    if (routine.week) {
+                        const sessions = [];
+                        Object.keys(routine.week).forEach(k => {
+                            const exs = routine.week[k] || [];
+                            // Use readable name for migrated sessions
+                            if (exs && exs.length > 0) sessions.push({ name: dayTranslation[k] || k, exercises: exs });
+                        });
+                        if (sessions.length === 0) sessions.push({ name: 'General', exercises: [] });
+                        return { name: routine.name, sessions };
+                    }
+                    // Default empty sessions
+                    return { name: routine.name, sessions: routine.sessions || [{ name: 'General', exercises: [] }] };
+                });
+
+                workoutHistory = data.history || [];
+                exerciseNotes = data.exerciseNotes || {};
+                exerciseTypes = data.exerciseTypes || {};
+                activeCycle = data.activeCycle || null;
+                previousCycle = data.previousCycle || null;
+                if(data.timerSettings) timerSettings = data.timerSettings;
+            }
+
+            // --- INYECTAR EJERCICIOS POR DEFECTO (exposed globally) ---
+            window.injectDefaultExercises = function() {
+                if (typeof window.exerciseTypes === 'undefined') window.exerciseTypes = {};
+                let addedCount = 0;
+                console.log("Iniciando inyección de ejercicios por defecto...");
+                Object.entries(DEFAULT_EXERCISES).forEach(([name, type]) => {
+                    if (!window.exerciseTypes.hasOwnProperty(name)) {
+                        window.exerciseTypes[name] = type;
+                        addedCount++;
+                    }
+                });
+                console.log(`Se agregaron ${addedCount} ejercicios nuevos al catálogo.`);
+                if (typeof updateExerciseSuggestions === 'function') updateExerciseSuggestions();
+                else console.log("No se encontró updateExerciseSuggestions(), asegúrate de refrescar la UI.");
+            };
+
+            window.addEventListener('online', () => { updateStatus("🌐 Online detectado"); saveData(); });
+            window.addEventListener('offline', () => updateStatus("📡 Modo Offline"));
+
+            // --- INIT & EVENTS ---
+            window.addEventListener('load', async () => {
+                loadTheme(); 
+                // NOTE: We do NOT call loadData() immediately anymore.
+                // We wait for Auth state change.
+            
+                // ATTACH LONG PRESS EVENTS TO TIMER
+                const timerWidget = document.getElementById("floatingTimer");
+            
+                const startPress = (e) => {
+                    if(e.target.tagName === 'BUTTON') return;
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        window.stopTimer(); 
+                        timerWidget.classList.add("hidden");
+                        if(navigator.vibrate) navigator.vibrate(50);
+                    }, 1000); 
+                };
+
+                const cancelPress = () => { clearTimeout(pressTimer); };
+
+                timerWidget.addEventListener("mousedown", startPress);
+                timerWidget.addEventListener("mouseup", cancelPress);
+                timerWidget.addEventListener("mouseleave", cancelPress);
+                timerWidget.addEventListener("touchstart", startPress, {passive: true});
+                timerWidget.addEventListener("touchend", cancelPress);
+                timerWidget.addEventListener("click", (e) => {
+                    if(isLongPress) return; 
+                    if(e.target.tagName === 'BUTTON') return; 
+                    window.expandTimer();
+                });
+
+                // Basic UI bindings
+                document.getElementById("btnCreateRoutine").onclick = window.createNewRoutine;
+                document.getElementById("btnShowCalendar").onclick = window.showCalendar;
+                document.getElementById("btnShowHistory").onclick = () => { openHistory(); };
+                document.getElementById("btnBackFromEditor").onclick = showMainMenu;
+                document.getElementById("btnCancelSession").onclick = showMainMenu;
+                document.getElementById("btnStartWorkout").onclick = window.startWorkout;
+                document.getElementById("btnFinishSession").onclick = () => {
+                    // finish session simplified
+                    const inputs = document.querySelectorAll('#workoutInputsContainer .exercise-card');
+                    const completed = [];
+                    inputs.forEach((card) => {
+                        const titleEl = card.querySelector('.exercise-title');
+                        const title = titleEl ? titleEl.innerText.replace(/^\S+\s/, '').trim() : 'Ejercicio';
+                        completed.push({ name: title, sets: [] });
+                    });
+                    const entryDate = calendarSelectedDate || new Date().toLocaleDateString();
+                    const entryTimestamp = Date.now();
+                    const routine = allRoutines[currentRoutineIndex];
+                    const sessionSel = document.getElementById('sessionSessionSelector');
+                    const sessionIndex = sessionSel ? parseInt(sessionSel.value||0,10) : 0;
+                    const session = (routine.sessions||[])[sessionIndex];
+                    const entry = { routineName: routine.name, sessionName: session ? session.name : 'General', date: entryDate, timestamp: entryTimestamp, details: completed };
+                    if(editingHistoryIndex !== null && editingHistoryIndex !== undefined) workoutHistory[editingHistoryIndex] = entry; else workoutHistory.push(entry);
+                    saveData();
+                    alert('✅ Sesión guardada');
+                    showMainMenu();
+                };
+
+                // editor/session controls
+                document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
+                document.getElementById("btnAddSession").onclick = () => { const name = document.getElementById('editorSessionInput').value.trim(); if(!name) return; const sessions = allRoutines[currentRoutineIndex].sessions = allRoutines[currentRoutineIndex].sessions || []; sessions.push({ name, exercises: [] }); saveData(); document.getElementById('editorSessionInput').value=''; window.editorSelectedSessionIndex = sessions.length - 1; renderEditorList(); };
+                document.getElementById("btnDeleteSession").onclick = () => { const sel = document.getElementById('editorSessionSelector'); const idx = parseInt(sel.value||0,10); if(!confirm('Eliminar sesión?')) return; allRoutines[currentRoutineIndex].sessions.splice(idx,1); saveData(); renderEditorList(); };
+                document.getElementById('editorSessionSelector').onchange = function() {
+                    window.editorSelectedSessionIndex = parseInt(this.value || 0, 10);
+                    // only re-render exercises for the selected session (avoid rebuilding the select)
+                    renderSessionExercises(window.editorSelectedSessionIndex);
+                };
+                document.getElementById("exerciseInput").addEventListener('input', function(e){ const val = e.target.value; if(window.exerciseTypes && window.exerciseTypes[val]) document.getElementById('exerciseTypeSelector').value = window.exerciseTypes[val]; });
+
+                // Cycle controls
+                const btnAdvance = document.getElementById('btnAdvanceWeek'); if(btnAdvance) btnAdvance.onclick = () => { if(!activeCycle) return; activeCycle.currentWeek = (activeCycle.currentWeek || 1) + 1; if(activeCycle.currentWeek > (activeCycle.totalWeeks||4)) { previousCycle = { routineName: allRoutines[activeCycle.routineIndex] ? allRoutines[activeCycle.routineIndex].name : 'Rutina', weeks: activeCycle.totalWeeks || 4 }; activeCycle = null; } saveData(); renderCyclePanel(); renderPrevCyclePanel(); renderRoutinesList(); };
+                const btnStop = document.getElementById('btnStopCycle'); if(btnStop) btnStop.onclick = () => { if(!activeCycle) return; if(!confirm('Finalizar ciclo activo?')) return; previousCycle = { routineName: allRoutines[activeCycle.routineIndex] ? allRoutines[activeCycle.routineIndex].name : 'Rutina', weeks: activeCycle.totalWeeks || 4 }; activeCycle = null; saveData(); renderCyclePanel(); renderPrevCyclePanel(); renderRoutinesList(); };
+            });
+
+            // --- AUTH LISTENER ---
+            onAuthStateChanged(auth, async (user) => {
+                const loginOverlay = document.getElementById("loginOverlay");
+                const loadingOverlay = document.getElementById("loadingOverlay");
+                const appContainer = document.getElementById("mainAppContainer");
+
+                if (user) {
+                    // User is signed in
+                    console.log("User logged in:", user.uid);
+                    currentUserUID = user.uid;
+                
+                    loginOverlay.classList.add("hidden");
+                    loadingOverlay.classList.remove("hidden"); // Show loading while fetching data
+                
+                    await loadData();
+                    updateTimerSummary();
+                
+                    loadingOverlay.classList.add("hidden");
+                    appContainer.classList.remove("hidden");
+                
+                } else {
+                    // User is signed out
+                    console.log("User logged out");
+                    currentUserUID = null;
+                    loginOverlay.classList.remove("hidden");
+                    appContainer.classList.add("hidden");
+                }
+            });
+
+            function renderUI() { showMainMenu(); }
+
+            function showMainMenu() {
+                hideAllViews();
+                document.getElementById("menuView").classList.remove("hidden");
+                renderCyclePanel();
+                renderPrevCyclePanel();
+                renderRoutinesList();
+                updateTimerSummary();
+
+                window.stopTimer();
+                document.getElementById("floatingTimer").classList.add("hidden");
+            
+                releaseWakeLock();
+                // Ensure history state reflects main menu so back button will exit only from here
+                setHistoryState('menu');
+            }
+
+            function hideAllViews() {
+                document.getElementById("menuView").classList.add("hidden");
+                document.getElementById("editorView").classList.add("hidden");
+                document.getElementById("sessionView").classList.add("hidden");
+                document.getElementById("historyView").classList.add("hidden");
+                document.getElementById("routineDetailView").classList.add("hidden");
+                document.getElementById("calendarView").classList.add("hidden");
+            }
+
+            // History state management for Android back button handling
+            function setHistoryState(viewName) {
+                try {
+                    const state = { view: viewName };
+                    // replaceState when on menu to ensure single entry; pushState otherwise
+                    if (viewName === 'menu') history.replaceState(state, '', location.href);
+                    else history.pushState(state, '', location.href + '#'+viewName);
+                } catch (e) { console.warn('History API unavailable', e); }
+            }
+
+            window.addEventListener('popstate', function (e) {
+                // When user presses Android back button, this event fires.
+                const state = e.state || {};
+                // If no state or state.view === 'menu' then we are at top-level: confirm exit
+                if (!state.view || state.view === 'menu') {
+                    // If current visible view is menu, ask before closing
+                    const menuVisible = !document.getElementById('menuView').classList.contains('hidden');
+                    if (menuVisible) {
+                        if (confirm('¿Deseas salir de la app?')) {
+                            // let default behavior happen (close app)
+                            try { window.close(); } catch (e) { /* ignore */ }
+                        } else {
+                            // user canceled, push menu back
+                            setHistoryState('menu');
+                        }
+                    } else {
+                        // Not on menu but no history state -> go to main menu
+                        showMainMenu();
+                    }
+                    return;
+                }
+
+                // For other states, navigate to the named view
+                switch (state.view) {
+                    case 'editor': showEditor(window.currentRoutineIndex || 0); break;
+                    case 'session': showSessionView(); break;
+                    case 'history': showHistoryView(); break;
+                    case 'detail': showMainMenu(); break;
+                    case 'calendar': showCalendar(); break;
+                    default: showMainMenu(); break;
+                }
+            });
+
+            // --- TIMER LOGIC ---
+            window.openTimerConfig = () => {
+                document.getElementById("cfgPrep").value = timerSettings.prep;
+                document.getElementById("cfgSets").value = timerSettings.sets;
+                document.getElementById("cfgWork").value = timerSettings.work;
+                document.getElementById("cfgRest").value = timerSettings.rest;
+                document.getElementById("timerConfigModal").classList.remove("hidden");
+            }
+
+            window.closeTimerConfig = () => {
+                document.getElementById("timerConfigModal").classList.add("hidden");
+            }
+
+            window.saveTimerConfig = () => {
+                timerSettings.prep = parseInt(document.getElementById("cfgPrep").value) || 0;
+                timerSettings.sets = parseInt(document.getElementById("cfgSets").value) || 1;
+                timerSettings.work = parseInt(document.getElementById("cfgWork").value) || 10;
+                timerSettings.rest = parseInt(document.getElementById("cfgRest").value) || 10;
+                saveData(); 
+                updateTimerSummary();
+                window.closeTimerConfig();
+            }
+
+            function updateTimerSummary() {
+                document.getElementById("timerConfigSummary").innerText = 
+                    `Prep: ${timerSettings.prep}s | Sets: ${timerSettings.sets} | Work: ${timerSettings.work}s | Rest: ${timerSettings.rest}s`;
+            }
+
+            window.activateTimer = () => {
+                const w = document.getElementById("floatingTimer");
+                w.classList.remove("hidden");
+                w.classList.remove("status-stopped");
+                w.classList.add("status-stopped"); 
+            
+                timerState.phase = 'stopped';
+                timerState.running = false;
+                timerState.currentSet = 1;
+                timerState.timeLeft = timerSettings.prep;
+
+                updateTimerDisplay();
+                window.expandTimer(); 
+                requestWakeLock();
+            }
+
+            window.expandTimer = () => {
+                document.getElementById("floatingTimer").classList.add("expanded");
+            }
+
+            window.minimizeTimer = (event) => {
+                if(event) event.stopPropagation();
+                document.getElementById("floatingTimer").classList.remove("expanded");
+            }
+
+            window.toggleTimerState = () => {
+                if (timerState.running) {
+                    clearInterval(timerIntervalId);
+                    timerState.running = false;
+                    document.getElementById("btnTimerToggle").innerText = "▶️";
+                } else {
+                    if (timerState.phase === 'stopped' || timerState.phase === 'finished') {
+                        startNextPhase('prep');
+                    } else {
+                        timerIntervalId = setInterval(timerTick, 1000);
+                        timerState.running = true;
+                        document.getElementById("btnTimerToggle").innerText = "⏸️";
+                    }
+                }
+            }
+
+            window.stopTimer = () => {
+                clearInterval(timerIntervalId);
+                timerState.running = false;
+                timerState.phase = 'stopped';
+                timerState.timeLeft = 0;
+                document.getElementById("btnTimerToggle").innerText = "▶️";
+            
+                const w = document.getElementById("floatingTimer");
+                w.classList.remove("status-prep", "status-work", "status-rest");
+                w.classList.add("status-stopped");
+                updateTimerDisplay();
+            }
+
+            window.prevTimerPhase = () => {
+                clearInterval(timerIntervalId);
+                if (timerState.phase === 'work') {
+                    if (timerState.currentSet === 1) {
+                        startNextPhase('prep');
+                    } else {
+                        timerState.currentSet--;
+                        startNextPhase('rest');
+                    }
+                } else if (timerState.phase === 'rest') {
+                    startNextPhase('work');
+                } else if (timerState.phase === 'prep') {
+                    timerState.timeLeft = timerSettings.prep;
+                    updateTimerDisplay();
+                    if(timerState.running) timerIntervalId = setInterval(timerTick, 1000);
+                } else if (timerState.phase === 'finished') {
+                    timerState.currentSet = timerSettings.sets;
+                    startNextPhase('rest');
+                }
+            }
+
+            window.skipTimerPhase = () => {
+                if (timerState.phase === 'prep') startNextPhase('work');
+                else if (timerState.phase === 'work') startNextPhase('rest');
+                else if (timerState.phase === 'rest') {
+                    if(timerState.currentSet < timerSettings.sets) {
+                        timerState.currentSet++;
+                        startNextPhase('work');
+                    } else {
+                        startNextPhase('finished');
+                    }
+                }
+            }
+
+            function startNextPhase(phase) {
+                clearInterval(timerIntervalId);
+                timerState.phase = phase;
+                timerState.running = true;
+                document.getElementById("btnTimerToggle").innerText = "⏸️";
+
+                const w = document.getElementById("floatingTimer");
+                w.classList.remove("status-prep", "status-work", "status-rest", "status-stopped");
+
+                if (phase === 'prep') {
+                    timerState.timeLeft = timerSettings.prep;
+                    w.classList.add("status-prep");
+                } else if (phase === 'work') {
+                    timerState.timeLeft = timerSettings.work;
+                    w.classList.add("status-work");
+                } else if (phase === 'rest') {
+                    timerState.timeLeft = timerSettings.rest;
+                    w.classList.add("status-rest");
+                } else if (phase === 'finished') {
+                    timerState.running = false;
+                    timerState.timeLeft = 0;
+                    document.getElementById("btnTimerToggle").innerText = "▶️";
+                    w.classList.add("status-stopped"); 
+                    if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                    alert("¡Timer Terminado!");
+                    return;
+                }
+
+                updateTimerDisplay();
+                timerIntervalId = setInterval(timerTick, 1000);
+            }
+
+            function timerTick() {
+                if (timerState.timeLeft > 0) {
+                    timerState.timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    if(navigator.vibrate) navigator.vibrate(200);
+                    if (timerState.phase === 'prep') {
+                        startNextPhase('work');
+                    } else if (timerState.phase === 'work') {
+                         if(timerState.currentSet === timerSettings.sets && timerSettings.rest === 0) {
+                             startNextPhase('finished');
+                         } else {
+                             startNextPhase('rest');
+                         }
+                    } else if (timerState.phase === 'rest') {
+                        if (timerState.currentSet < timerSettings.sets) {
+                            timerState.currentSet++;
+                            startNextPhase('work');
+                        } else {
+                            startNextPhase('finished');
+                        }
+                    }
+                }
+            }
+
+            function updateTimerDisplay() {
+                const min = Math.floor(timerState.timeLeft / 60);
+                const sec = timerState.timeLeft % 60;
+                const timeStr = `${min}:${sec < 10 ? '0'+sec : sec}`;
+            
+                document.getElementById("mainTimerDisplay").innerText = timeStr;
+                document.getElementById("miniTimerDisplay").innerText = timeStr;
+                document.getElementById("timerSetDisplay").innerText = timerState.currentSet;
+                document.getElementById("timerTotalSetsDisplay").innerText = timerSettings.sets;
+
+                let label = "READY";
+                if (timerState.phase === 'prep') label = "PREPARE";
+                if (timerState.phase === 'work') label = "WORK";
+                if (timerState.phase === 'rest') label = "REST";
+                if (timerState.phase === 'finished') label = "DONE";
+            
+                document.getElementById("timerPhaseLabel").innerText = label;
+            }
+
+            // --- RENDER CYCLE PANELS ---
+            function renderCyclePanel() {
+                const panel = document.getElementById("activeCyclePanel");
+                if (!activeCycle) {
+                    panel.classList.add("hidden");
+                    return;
+                }
+                panel.classList.remove("hidden");
+                const routineName = allRoutines[activeCycle.routineIndex] ? allRoutines[activeCycle.routineIndex].name : "Rutina (Borrada)";
+                document.getElementById("lblActiveRoutineName").innerText = routineName;
+                document.getElementById("lblCurrentWeek").innerText = activeCycle.currentWeek;
+                const pct = (activeCycle.currentWeek / activeCycle.totalWeeks) * 100;
+                document.getElementById("progressBar").style.width = `${pct}%`;
+            }
+
+            function renderPrevCyclePanel() {
+                const panel = document.getElementById("prevCyclePanel");
+                if (!previousCycle) {
+                    panel.classList.add("hidden");
+                    return;
+                }
+                panel.classList.remove("hidden");
+                document.getElementById("lblPrevRoutineName").innerText = previousCycle.routineName;
+                document.getElementById("lblPrevWeeks").innerText = previousCycle.weeks;
+            }
+
+            // --- EXERCISE TYPE UTILS ---
+            function getExerciseType(name) { return exerciseTypes[name] || "standard"; }
+            function getTypeIcon(type) {
+                if(type === 'bw') return '🤸';
+                if(type === 'weighted') return '➕';
+                if(type === 'time') return '⏱️';
+                return '🏋️';
+            }
+            function getTypeLabel(type) {
+                if(type === 'bw') return 'Corporal';
+                if(type === 'weighted') return 'Lastre';
+                if(type === 'time') return 'Tiempo';
+                return 'Peso';
+            }
+
+            // --- EXERCISE ENTRY HELPERS (support string or object {name, execution}) ---
+            function getExName(ex) { return (typeof ex === 'string') ? ex : (ex && ex.name) ? ex.name : ''; }
+            function getExExecution(ex) { return (ex && ex.execution) ? ex.execution : getLastExecutionForExercise(getExName(ex)) || 'bilateral'; }
+
+            function getLastExecutionForExercise(name) {
+                if(!name) return 'bilateral';
+                for(let i = workoutHistory.length - 1; i >= 0; i--) {
+                    const entry = workoutHistory[i];
+                    if(!entry || !entry.details) continue;
+                    for(const d of entry.details) {
+                        if(d.name === name && d.execution) return d.execution;
+                    }
+                }
+                return 'bilateral';
+            }
+
+            function getLastPerformanceForExerciseWithExecution(name, execution) {
+                if(!name) return null;
+                for(let i = workoutHistory.length - 1; i >= 0; i--) {
+                    const entry = workoutHistory[i];
+                    if(!entry || !entry.details) continue;
+                    for(const d of entry.details) {
+                        if(d.name === name && (d.execution || 'bilateral') === (execution || 'bilateral')) return d.sets;
+                    }
+                }
+                return null;
+            }
+
+            // --- ROUTINES ---
+            window.createNewRoutine = () => {
+                const input = document.getElementById("newRoutineName");
+                if (!input.value) return;
+                const newRoutine = {
+                    name: input.value,
+                    sessions: [{ name: 'General', exercises: [] }]
+                };
+                allRoutines.push(newRoutine);
+                saveData();
+                input.value = "";
+                renderRoutinesList();
+            }
+
+            window.deleteRoutine = (index) => {
+                if(confirm("¿Borrar rutina?")) {
+                    if (activeCycle && activeCycle.routineIndex === index) activeCycle = null;
+                    allRoutines.splice(index, 1);
+                    saveData();
+                    renderRoutinesList();
+                    renderCyclePanel();
+                }
+            }
+
+            // Start a training cycle for a routine
+            window.startCycle = function(index, totalWeeks = 4) {
+                const idx = Number(index);
+                if (isNaN(idx) || !allRoutines[idx]) return;
+                if (!confirm(`Iniciar ciclo para "${allRoutines[idx].name}" por ${totalWeeks} semanas?`)) return;
+                activeCycle = { routineIndex: idx, currentWeek: 1, totalWeeks: totalWeeks };
+                previousCycle = previousCycle || null;
+                saveData();
+                renderCyclePanel();
+                renderPrevCyclePanel();
+                renderRoutinesList();
+                updateStatus('Ciclo iniciado');
+            };
+
+            function renderRoutinesList() {
+                const list = document.getElementById("routinesList");
+                list.innerHTML = "";
+                allRoutines.forEach((routine, i) => {
+                    const li = document.createElement("li");
+                    const nameDiv = document.createElement('div');
+                    nameDiv.style.fontWeight = 'bold';
+                    nameDiv.innerText = (activeCycle && activeCycle.routineIndex === i) ? `${routine.name} (ACTIVA 🔥)` : routine.name;
+
+                    const container = document.createElement('div');
+                    container.style.display = 'flex';
+                    container.style.flexDirection = 'column';
+                    container.style.gap = '5px';
+
+                    const topRow = document.createElement('div');
+                    const btnView = document.createElement('button'); btnView.className = 'btn-dark btn-small'; btnView.innerText = 'Ver'; btnView.addEventListener('click', () => window.showRoutineDetail(i));
+                    topRow.appendChild(btnView);
+                    if(!activeCycle) {
+                        const btnCycle = document.createElement('button'); btnCycle.className = 'btn-purple btn-small'; btnCycle.innerText = 'Ciclo'; btnCycle.addEventListener('click', () => window.startCycle(i));
+                        topRow.appendChild(btnCycle);
+                    }
+
+                    const bottomRow = document.createElement('div');
+                    const btnTrain = document.createElement('button'); btnTrain.className = 'btn-success btn-small'; btnTrain.innerText = 'Entrenar'; btnTrain.addEventListener('click', () => window.setupSession(i));
+                    const btnEdit = document.createElement('button'); btnEdit.className = 'btn-warning btn-small'; btnEdit.innerText = 'Editar'; btnEdit.addEventListener('click', () => window.showEditor(i));
+                    const btnDelete = document.createElement('button'); btnDelete.className = 'btn-danger btn-small'; btnDelete.innerText = 'X'; btnDelete.addEventListener('click', () => window.deleteRoutine(i));
+                    bottomRow.appendChild(btnTrain); bottomRow.appendChild(btnEdit); bottomRow.appendChild(btnDelete);
+
+                    container.appendChild(topRow);
+                    container.appendChild(bottomRow);
+
+                    li.appendChild(nameDiv);
+                    li.appendChild(container);
+                    list.appendChild(li);
+                });
+            }
+
+            // --- CALENDAR ---
+            window.showCalendar = () => { hideAllViews(); document.getElementById("calendarView").classList.remove("hidden"); renderCalendar(); }
+            // helper to open calendar with history state
+            function openCalendar() { setHistoryState('calendar'); window.showCalendar(); }
+            window.changeMonth = (offset) => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset); renderCalendar(); }
+
+            function renderCalendar() {
+                const year = currentCalendarDate.getFullYear();
+                const month = currentCalendarDate.getMonth();
+                const today = new Date();
+                const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                document.getElementById("calendarTitle").innerText = `${monthNames[month]} ${year}`;
+                const container = document.getElementById("calendarDaysContainer");
+                container.innerHTML = "";
+                document.getElementById("calendarDayDetails").classList.add("hidden");
+
+                const firstDay = new Date(year, month, 1).getDay(); 
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                for (let i = 0; i < firstDay; i++) { container.appendChild(document.createElement("div")); }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateObj = new Date(year, month, day);
+                    const dateStr = dateObj.toLocaleDateString();
+                    const dayDiv = document.createElement("div");
+                    dayDiv.className = "cal-day";
+                    dayDiv.innerText = day;
+
+                    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) dayDiv.classList.add("today");
+
+                    const workoutIndex = workoutHistory.findIndex(w => w.date === dateStr);
+                    const workoutEntry = workoutIndex !== -1 ? workoutHistory[workoutIndex] : null;
+                    if (workoutEntry) {
+                        dayDiv.classList.add("has-workout");
+                        const marker = document.createElement("div");
+                        marker.className = "cal-marker";
+                        dayDiv.appendChild(marker);
+                    }
+
+                    dayDiv.onclick = () => {
+                        document.querySelectorAll(".cal-day").forEach(d => d.classList.remove("selected"));
+                        dayDiv.classList.add("selected");
+                        showCalendarDayDetails(dateStr, workoutEntry, dateObj, workoutIndex);
+                    };
+                    container.appendChild(dayDiv);
+                }
+            }
+
+            function showCalendarDayDetails(dateStr, workout, dateObj, workoutIndex) {
+                const detailBox = document.getElementById("calendarDayDetails");
+                const content = document.getElementById("calDetailContent");
+                document.getElementById("calDetailDate").innerText = `Detalles del ${dateStr}`;
+                detailBox.classList.remove("hidden");
+
+                // store selected date for create/edit actions
+                calendarSelectedDate = dateStr;
+
+                if (!workout) {
+                    // No workout: allow creating one for this date
+                    const weekday = dateObj.getDay(); // 0=Sun .. 6=Sat
+                    // map to our day keys (Monday..Sunday)
+                    const dayMap = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    const dayKey = dayMap[weekday];
+
+                    let html = `<div style="text-align:center; opacity:0.9; margin-bottom:10px;">Día de descanso 💤</div>`;
+                    html += `<div style="display:flex; gap:8px; margin-bottom:10px;">
+                                <select id="calendarRoutineSelect">
+                                    <option value="">-- Selecciona Rutina --</option>`;
+                    allRoutines.forEach((r, idx) => { html += `<option value="${idx}">${r.name}</option>`; });
+                    html += `</select>
+                                <select id="calendarSessionSelect"></select></div>`;
+                    html += `<div style="display:flex; gap:8px;"><button class="btn-success" onclick="window.createSessionFromCalendar()">Crear Sesión</button><button class="btn-secondary" onclick="document.getElementById('calendarDayDetails').classList.add('hidden')">Cerrar</button></div>`;
+                    content.innerHTML = html;
+                    // Attach listener to populate sessions when routine changes (avoid injecting <script> tag inside a script)
+                    const calendarRoutineSelectEl = document.getElementById('calendarRoutineSelect');
+                    if (calendarRoutineSelectEl) {
+                        calendarRoutineSelectEl.addEventListener('change', function() {
+                            const s = document.getElementById('calendarSessionSelect');
+                            if (!s) return;
+                            s.innerHTML = '';
+                            const r = allRoutines[this.value];
+                            if (r) {
+                                (r.sessions || []).forEach((ss, ix) => {
+                                    const o = document.createElement('option');
+                                    o.value = ix;
+                                    o.text = ss.name;
+                                    s.appendChild(o);
+                                });
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // If workout exists, show details and provide edit option
+                const routineName = workout.routineName || '';
+                const dayName = workout.dayName || '';
+                let headerHtml = `<div style="display:flex; justify-content:space-between; align-items:center;"><strong style="font-size:1.1em; color:var(--color-primary);">${routineName}</strong><div><button class=\"btn-info btn-small\" onclick=\"window.openSessionEditFromCalendar(${workoutIndex})\">✎ Editar</button> <button class=\"btn-danger btn-small\" onclick=\"window.deleteHistoryEntryFromCalendar(${workoutIndex})\">Eliminar</button></div></div><div style=\"font-size:0.9em; opacity:0.7; margin-top:6px;\">(${dayName})</div>`;
+
+                let detailsHtml = '';
+                (workout.details || []).forEach(d => {
+                    let badge = '';
+                    if (d.pr === 'new') badge = '<span class="badge-pr">🏆 NEW PR</span>';
+                    const type = getExerciseType(d.name);
+                    const execLabel = d.execution ? ` (${d.execution})` : '';
+                    const setsStr = (d.sets || []).map(s => {
+                        if (type === 'bw') return s.reps;
+                        if (type === 'weighted') return `+${s.weight}`;
+                        if (type === 'time') return `${s.weight}s / ${s.reps}s`;
+                        return `${s.reps}x${s.weight}kg`;
+                    }).join(', ');
+                    detailsHtml += `<div style="border-bottom:1px solid var(--border-color); padding:5px; display:flex; justify-content:space-between;"><span>${d.name}${execLabel}</span><b>${setsStr} ${badge}</b></div>`;
+                });
+
+                const finalHtml = headerHtml + `<ul style="margin-top:10px;">` + detailsHtml + `</ul>`;
+                content.innerHTML = finalHtml;
+            }
+
+            // Open an existing history entry for editing from calendar
+            window.openSessionEditFromCalendar = (historyIndex) => {
+                const entry = workoutHistory[historyIndex];
+                if(!entry) return;
+                // try to find routine index
+                const rIdx = allRoutines.findIndex(r => r.name === entry.routineName);
+                currentRoutineIndex = rIdx !== -1 ? rIdx : 0;
+                editingHistoryIndex = historyIndex;
+
+                hideAllViews();
+                document.getElementById('sessionView').classList.remove('hidden');
+                document.getElementById('sessionSetup').classList.add('hidden');
+                document.getElementById('sessionForm').classList.remove('hidden');
+                document.getElementById('floatingTimer').classList.add('hidden');
+                // try to set session selector if exists
+                const sel = document.getElementById('sessionSessionSelector'); if(sel){ sel.innerHTML=''; (allRoutines[currentRoutineIndex].sessions||[]).forEach((s,ix)=>{ const o=document.createElement('option'); o.value=ix; o.text=s.name; sel.appendChild(o); if(s.name===entry.sessionName) sel.value=ix; }); }
+                document.getElementById('resumeBadge').style.display = 'block';
+                calendarSelectedDate = entry.date;
+                const session = (allRoutines[currentRoutineIndex].sessions||[]).find(s=>s.name===entry.sessionName) || (allRoutines[currentRoutineIndex].sessions||[])[0];
+                const exercises = session ? session.exercises : [];
+                renderSessionCards(exercises, entry);
+            }
+
+            // Populate datalist for exercise suggestions
+            window.updateExerciseSuggestions = function() {
+                const dl = document.getElementById('exerciseSuggestions');
+                if (!dl) return;
+                dl.innerHTML = '';
+                const names = Object.keys(window.exerciseTypes || {});
+                names.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+            };
+
+            // Editor rendering helpers
+            window.editorSelectedSessionIndex = window.editorSelectedSessionIndex || 0;
+
+            function renderEditorList() {
+                if (currentRoutineIndex === -1) return;
+                const routine = allRoutines[currentRoutineIndex] || { sessions: [] };
+                document.getElementById('editRoutineNameInput').value = routine.name || '';
+                const sel = document.getElementById('editorSessionSelector'); sel.innerHTML = '';
+                (routine.sessions || []).forEach((s, i) => { const o = document.createElement('option'); o.value = i; o.text = s.name; sel.appendChild(o); });
+                sel.value = window.editorSelectedSessionIndex || 0;
+                renderSessionExercises(window.editorSelectedSessionIndex || 0);
+                updateExerciseSuggestions();
+            }
+
+            function renderSessionExercises(sessionIndex) {
+                const list = document.getElementById('editorList'); list.innerHTML = '';
+                const routine = allRoutines[currentRoutineIndex] || { sessions: [] };
+                const session = (routine.sessions || [])[sessionIndex] || { exercises: [] };
+                (session.exercises || []).forEach((ex, idx) => {
+                    const li = document.createElement('li');
+                    li.className = 'exercise-row';
+                    const meta = document.createElement('div'); meta.className = 'exercise-meta';
+                    const title = document.createElement('div'); title.className = 'exercise-title'; title.innerText = getExName(ex);
+                    meta.appendChild(title);
+                    const actions = document.createElement('div'); actions.className = 'exercise-actions';
+                    const btnDel = document.createElement('button'); btnDel.className = 'icon-btn delete'; btnDel.innerText = 'X'; btnDel.onclick = () => { if(!confirm('Eliminar ejercicio?')) return; (routine.sessions[sessionIndex].exercises||[]).splice(idx,1); saveData(); renderEditorList(); };
+                    actions.appendChild(btnDel);
+                    li.appendChild(meta); li.appendChild(actions);
+                    list.appendChild(li);
+                });
+            }
+
+            // Add exercise from editor input
+            window.addExerciseToPlan = function() {
+                const name = (document.getElementById('exerciseInput').value || '').trim(); if(!name) return;
+                const type = document.getElementById('exerciseTypeSelector').value || 'standard';
+                const exec = document.getElementById('exerciseExecutionSelector').value || 'bilateral';
+                const routine = allRoutines[currentRoutineIndex] = allRoutines[currentRoutineIndex] || { name: 'Rutina', sessions: [{ name: 'General', exercises: [] }] };
+                const sessIdx = window.editorSelectedSessionIndex || 0;
+                routine.sessions[sessIdx] = routine.sessions[sessIdx] || { name: 'General', exercises: [] };
+                routine.sessions[sessIdx].exercises.push({ name, execution: exec });
+                window.exerciseTypes = window.exerciseTypes || {};
+                window.exerciseTypes[name] = type;
+                document.getElementById('exerciseInput').value = '';
+                saveData(); renderEditorList();
+            };
+
+            // Render simple session cards for session view (used when editing a history entry)
+            function renderSessionCards(exercises, entry) {
+                const container = document.getElementById('workoutInputsContainer'); container.innerHTML = '';
+                (exercises || []).forEach(ex => {
+                    const card = document.createElement('div'); card.className = 'exercise-card';
+                    const title = document.createElement('div'); title.className = 'exercise-title'; title.innerText = getExName(ex);
+                    card.appendChild(title);
+                    // show previous sets if entry provided
+                    if (entry && entry.details) {
+                        const found = (entry.details || []).find(d => d.name === getExName(ex));
+                        if (found && found.sets) {
+                            const p = document.createElement('div'); p.style.fontSize='0.9em'; p.style.marginTop='8px'; p.innerText = 'Sets: ' + (found.sets || []).map(s => (s.reps? s.reps : '') + (s.weight? 'x'+s.weight : '')).join(', ');
+                            card.appendChild(p);
+                        }
+                    }
+                    container.appendChild(card);
+                });
+            }
+
+            // Navigation helpers
+            window.showEditor = function(index) {
+                currentRoutineIndex = index || 0;
+                window.currentRoutineIndex = currentRoutineIndex;
+                window.editorSelectedSessionIndex = 0;
+                hideAllViews();
+                document.getElementById('editorView').classList.remove('hidden');
+                renderEditorList();
+                setHistoryState('editor');
+            };
+
+            window.setupSession = function(index) {
+                currentRoutineIndex = index || 0;
+                window.currentRoutineIndex = currentRoutineIndex;
+                hideAllViews();
+                document.getElementById('sessionView').classList.remove('hidden');
+                document.getElementById('sessionSetup').classList.remove('hidden');
+                document.getElementById('sessionForm').classList.add('hidden');
+                const sel = document.getElementById('sessionSessionSelector'); sel.innerHTML=''; (allRoutines[currentRoutineIndex].sessions||[]).forEach((s,ix)=>{ const o=document.createElement('option'); o.value=ix; o.text=s.name; sel.appendChild(o); });
+                setHistoryState('session');
+            };
+
+            // Start the actual workout from the session setup
+            window.startWorkout = function() {
+                // determine selected session
+                const sel = document.getElementById('sessionSessionSelector');
+                const sessionIndex = sel ? parseInt(sel.value || 0, 10) : 0;
+                const routine = allRoutines[currentRoutineIndex] || { sessions: [] };
+                const session = (routine.sessions || [])[sessionIndex] || { exercises: [] };
+
+                // prepare UI for training
+                hideAllViews();
+                document.getElementById('sessionView').classList.remove('hidden');
+                document.getElementById('sessionSetup').classList.add('hidden');
+                document.getElementById('sessionForm').classList.remove('hidden');
+
+                // reset editing state and set current date for this session
+                editingHistoryIndex = null;
+                document.getElementById('resumeBadge').style.display = 'none';
+                calendarSelectedDate = new Date().toLocaleDateString();
+
+                // render the exercises into the workout form
+                renderSessionCards(session.exercises, null);
+
+                // show the floating timer so user can activate it if desired
+                const ft = document.getElementById('floatingTimer');
+                if (ft) ft.classList.remove('hidden');
+
+                setHistoryState('session');
+            };
+
+            window.showRoutineDetail = function(index) {
+                const routine = allRoutines[index]; if(!routine) return;
+                hideAllViews();
+                document.getElementById('routineDetailView').classList.remove('hidden');
+                document.getElementById('detailTitle').innerText = routine.name;
+                const container = document.getElementById('detailContainer'); container.innerHTML = '';
+                (routine.sessions || []).forEach(s => {
+                    const sdiv = document.createElement('div'); sdiv.className = 'day-header'; sdiv.innerText = s.name; container.appendChild(sdiv);
+                    (s.exercises || []).forEach(ex => { const exdiv = document.createElement('div'); exdiv.className='exercise-card'; exdiv.innerText = getExName(ex); container.appendChild(exdiv); });
+                });
+                setHistoryState('detail');
+            };
+
+        </script>
+</body>
+</html>
