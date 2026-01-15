@@ -607,10 +607,8 @@
             </div>
 
             <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
-                <label>Nueva Rutina:</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="newRoutineName" placeholder="Nombre Rutina" style="margin-bottom: 0;">
-                    <button class="btn-success" style="width: 80px; margin-bottom: 0;" id="btnCreateRoutine">Crear</button>
+                <div style="display:flex; justify-content:flex-end; align-items:center;">
+                    <button class="btn-success" style="width:auto; margin-bottom: 0;" id="btnCreateRoutine">Crear Rutina</button>
                 </div>
             </div>
 
@@ -637,7 +635,7 @@
                 <label style="font-size:0.8em; font-weight:bold; opacity:0.8;">Nombre de la Rutina:</label>
                 <div style="display:flex; gap:5px; margin-top:5px;">
                     <input type="text" id="editRoutineNameInput" style="margin-bottom:0;" placeholder="Nombre...">
-                    <button class="btn-success" style="width:auto; margin-bottom:0; min-width:80px;" onclick="window.saveRoutineRename()">Guardar</button>
+                    <button class="btn-success" style="width:auto; margin-bottom:0; min-width:80px;" onclick="window.saveRoutine()">Guardar Rutina</button>
                 </div>
             </div>
 
@@ -1206,10 +1204,42 @@
 
             window.addEventListener('popstate', (ev) => {
                 const st = ev.state;
+                // If editor is open and there are unsaved changes, confirm before allowing navigation
+                try {
+                    const editorVisible = document.getElementById('editorView') && !document.getElementById('editorView').classList.contains('hidden');
+                    if (editorVisible && window._editorDirty) {
+                        if (!confirm('Hay cambios sin guardar. ¿Descartar cambios y salir?')) {
+                            // User cancelled: restore editor history state to prevent navigation away
+                            try { history.pushState({ view: 'editor', index: currentRoutineIndex }, '', '#editor-' + currentRoutineIndex); } catch (e) { /* ignore */ }
+                            return; // do not handle this popstate
+                        } else {
+                            // User accepted: if this was a placeholder routine with no name and no exercises, remove it
+                            try {
+                                const name = document.getElementById('editRoutineNameInput').value.trim();
+                                const routine = allRoutines[currentRoutineIndex];
+                                const hasExercises = routine && routine.sessions && routine.sessions.some(s => (s.exercises && s.exercises.length > 0));
+                                if (!name && !hasExercises) {
+                                    // remove placeholder routine before navigating away
+                                    if (currentRoutineIndex >= 0 && currentRoutineIndex < allRoutines.length) {
+                                        allRoutines.splice(currentRoutineIndex, 1);
+                                    }
+                                    currentRoutineIndex = -1;
+                                }
+                            } catch (err) { console.error('Error cleaning placeholder routine on popstate', err); }
+                            // clear dirty flag and allow navigation
+                            clearEditorDirty();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error handling editor dirty on popstate', err);
+                }
+
                 appNavSuppressPush = true;
                 try {
                     if (!st || st.view === 'main') {
                         showMainMenu();
+                        // ensure routines list refreshed after possible placeholder removal
+                        renderRoutinesList();
                     } else if (st.view === 'editor') {
                         // index might be undefined
                         window.showEditor(st.index !== undefined ? st.index : 0);
@@ -1223,6 +1253,7 @@
                         window.setupSession(st.index !== undefined ? st.index : 0);
                     } else {
                         showMainMenu();
+                        renderRoutinesList();
                     }
                 } catch (e) { console.error('Error handling popstate', e); showMainMenu(); }
                 // allow future pushes
@@ -2049,9 +2080,13 @@
             // --- EDITOR & TYPES ---
             window.showEditor = (index) => {
                 currentRoutineIndex = index;
+                window._creatingRoutine = false;
+                window._tempRoutine = null;
                 hideAllViews();
                 document.getElementById("editorView").classList.remove("hidden");
                 document.getElementById("editRoutineNameInput").value = allRoutines[index].name;
+                // entering editor resets dirty flag (no unsaved changes yet)
+                clearEditorDirty();
                 updateExerciseSuggestions();
                 renderEditorSessions();
                 pushAppState('editor', { index: index });
@@ -2077,11 +2112,13 @@
                 document.getElementById('btnAddSession').onclick = () => {
                     const name = document.getElementById('newSessionName').value.trim(); if(!name) return alert('Nombre sesión vacío');
                     routine.sessions.push({ name: name, exercises: [] });
-                    saveData(); renderEditorSessions(); document.getElementById('newSessionName').value = '';
+                    // do NOT saveData here; mark editor dirty and re-render only
+                    markEditorDirty();
+                    renderEditorSessions(); document.getElementById('newSessionName').value = '';
                 };
                 document.getElementById('btnDeleteSession').onclick = () => {
                     const v = sel.value; if(!v) return alert('Selecciona sesión');
-                    if(confirm('Eliminar sesión?')) { routine.sessions.splice(parseInt(v),1); saveData(); renderEditorSessions(); }
+                    if(confirm('Eliminar sesión?')) { routine.sessions.splice(parseInt(v),1); markEditorDirty(); renderEditorSessions(); }
                 };
 
                 sel.onchange = () => {
@@ -2122,9 +2159,64 @@
             window.saveRoutineRename = () => {
                 const newName = document.getElementById("editRoutineNameInput").value.trim();
                 if(!newName) { alert("El nombre no puede estar vacío"); return; }
+                // Save entire routine (name + sessions) to storage
                 allRoutines[currentRoutineIndex].name = newName;
                 saveData();
-                alert("✅ Nombre actualizado a: " + newName);
+                alert("✅ Rutina guardada: " + newName);
+            }
+
+            // When leaving editor without saving (no name and no exercises), remove the placeholder routine
+            // Editor dirty state: changes in the editor do not autosave. Use Save Rutina to persist.
+            window._editorDirty = false;
+            function markEditorDirty() { window._editorDirty = true; }
+            function clearEditorDirty() { window._editorDirty = false; }
+
+            // Centralized handler for Back from editor. Attach via onclick to ensure only one handler runs.
+            window.handleBackFromEditor = () => {
+                const name = document.getElementById('editRoutineNameInput').value.trim();
+                const routine = allRoutines[currentRoutineIndex];
+                const hasExercises = routine && routine.sessions && routine.sessions.some(s => (s.exercises && s.exercises.length > 0));
+                // If there are unsaved changes, confirm before leaving
+                if (window._editorDirty) {
+                    if (!confirm('Hay cambios sin guardar. ¿Descartar cambios y salir?')) return;
+                }
+                // name is mandatory: if user attempts to leave with empty name but has made no exercises, remove placeholder
+                if (!name && !hasExercises) {
+                    // If this was a newly created placeholder routine, remove it. Otherwise keep it.
+                    if (window._creatingRoutine) {
+                        if (currentRoutineIndex >= 0 && currentRoutineIndex < allRoutines.length) allRoutines.splice(currentRoutineIndex, 1);
+                        currentRoutineIndex = -1;
+                    }
+                    clearEditorDirty();
+                    try { history.back(); } catch(e){ showMainMenu(); }
+                    return;
+                }
+                // clear dirty flag when leaving
+                clearEditorDirty();
+                // Reset creating flag when leaving editor normally
+                window._creatingRoutine = false;
+                try { history.back(); } catch(e){ showMainMenu(); }
+            };
+
+            // Add an explicit Save button behavior to save the whole routine (name + sessions)
+            window.saveRoutine = () => {
+                let newName = document.getElementById('editRoutineNameInput').value.trim();
+                if (!newName) return alert('El nombre no puede estar vacío');
+                // If another routine has same name, append (1), (2), ...
+                const existingNames = allRoutines.map((r, idx) => ({ name: r.name, idx })).filter(x => x.idx !== currentRoutineIndex).map(x => x.name);
+                if (existingNames.includes(newName)) {
+                    let i = 1;
+                    let candidate = `${newName} (${i})`;
+                    while (existingNames.includes(candidate)) { i++; candidate = `${newName} (${i})`; }
+                    newName = candidate;
+                }
+                allRoutines[currentRoutineIndex].name = newName;
+                // ensure sessions structure exists
+                if (!allRoutines[currentRoutineIndex].sessions) allRoutines[currentRoutineIndex].sessions = [{ name: 'General', exercises: [] }];
+                saveData();
+                clearEditorDirty();
+                alert('✅ Rutina guardada: ' + newName);
+                try { history.back(); } catch(e){ showMainMenu(); }
             }
 
             window.addExerciseToPlan = () => {
@@ -2141,6 +2233,8 @@
                     if(!routine.sessions) routine.sessions = [ { name: 'General', exercises: [] } ];
                     // Store as object so session occurrence can have own laterality
                     routine.sessions[sIdx].exercises.push({ name: name, laterality: laterality });
+                    // mark editor dirty instead of saving immediately
+                    markEditorDirty();
                 } else {
                     // fallback to day-based
                     const day = document.getElementById("editorDaySelector").value;
@@ -2149,7 +2243,8 @@
                 exerciseTypes[name] = type;
                 exerciseLaterality[name] = laterality;
 
-                saveData();
+                // do not autosave; mark editor dirty so user must press Guardar Rutina
+                markEditorDirty();
                 input.value = "";
                 updateExerciseSuggestions();
                 renderEditorSessions();
@@ -2802,11 +2897,27 @@
 
             // --- BINDS ---
             document.getElementById("btnCreateRoutine").onclick = window.createNewRoutine;
+            // Open editor for creating a new routine instead of inline create
+            document.getElementById("btnCreateRoutine").onclick = () => {
+                // Prepare editor for a new routine
+                const empty = { name: '', week: { "Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": [], "Saturday": [], "Sunday": [] }, sessions: [ { name: 'General', exercises: [] } ] };
+                allRoutines.push(empty);
+                currentRoutineIndex = allRoutines.length - 1;
+                // mark that we're creating a new placeholder routine (so discard removes it)
+                window._creatingRoutine = true;
+                // show editor with empty routine
+                hideAllViews();
+                document.getElementById("editorView").classList.remove("hidden");
+                document.getElementById("editRoutineNameInput").value = '';
+                renderEditorSessions();
+                pushAppState('editor', { index: currentRoutineIndex });
+            };
             document.getElementById("btnAdvanceWeek").onclick = window.advanceCycleWeek;
             document.getElementById("btnStopCycle").onclick = window.stopActiveCycle;
             document.getElementById("btnShowHistory").onclick = window.showHistoryView;
             document.getElementById("btnShowCalendar").onclick = window.showCalendar;
-            document.getElementById("btnBackFromEditor").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
+            // Back button behavior handled by the centralized handler
+            document.getElementById("btnBackFromEditor").onclick = window.handleBackFromEditor;
             document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
             // editorDaySelector removed; keep session UI independent
             document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
