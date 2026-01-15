@@ -563,6 +563,7 @@
             <div class="timer-controls">
                 <button class="btn-timer" style="background-color:rgba(0,0,0,0.3);" onclick="window.prevTimerPhase()">⏮️</button>
                 <button id="btnTimerToggle" class="btn-timer" style="background-color:rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5);" onclick="window.toggleTimerState()">▶️</button>
+                <button id="btnTimerStop" class="btn-timer" style="background-color:rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5);" onclick="window.resetTimer()">⏹️</button>
                 <button class="btn-timer" style="background-color:rgba(0,0,0,0.3);" onclick="window.skipTimerPhase()">⏭️</button>
             </div>
             <div style="font-size:0.7em; opacity:0.7; margin-top:5px;">Mantén presionado para cerrar</div>
@@ -873,6 +874,75 @@
                 }
             }
 
+    // --- POWER SAVER DETECTION (force dark mode while device is in power save) ---
+    window._forcedByPowerSaver = false;
+    window._prevUserTheme = null;
+
+    async function detectPowerSaver() {
+        try {
+            if (window._powerSaverInitialized) return; // avoid duplicate listeners/intervals
+            if ('getBattery' in navigator) {
+                const battery = await navigator.getBattery();
+
+                const evaluate = () => {
+                    // Consider power-saver if battery reports low level and not charging
+                    const lowLevel = (typeof battery.level === 'number') ? (battery.level <= 0.20 && !battery.charging) : false;
+                    // Some platforms may expose flags - try common names defensively
+                    const explicitSaver = battery.saveMode === true || battery.savingMode === true || battery.powerSaveMode === true;
+                    const isPowerSaver = lowLevel || explicitSaver;
+
+                    if (isPowerSaver) {
+                        if (!window._forcedByPowerSaver) {
+                            // preserve user's choice
+                            window._prevUserTheme = localStorage.getItem('gymTheme');
+                            document.body.classList.add('dark-mode');
+                            const btn = document.getElementById('btnThemeToggle'); if (btn) btn.innerText = '☀️';
+                            window._forcedByPowerSaver = true;
+                        }
+                    } else {
+                        if (window._forcedByPowerSaver) {
+                            // restore previous user theme (if any)
+                            window._forcedByPowerSaver = false;
+                            const prev = window._prevUserTheme;
+                            if (prev === 'dark') {
+                                document.body.classList.add('dark-mode');
+                                const btn = document.getElementById('btnThemeToggle'); if (btn) btn.innerText = '☀️';
+                            } else {
+                                document.body.classList.remove('dark-mode');
+                                const btn = document.getElementById('btnThemeToggle'); if (btn) btn.innerText = '🌙';
+                            }
+                            window._prevUserTheme = null;
+                        }
+                    }
+                };
+
+                // initial evaluate
+                evaluate();
+                // listen for changes
+                battery.addEventListener('levelchange', evaluate);
+                battery.addEventListener('chargingchange', evaluate);
+                battery.addEventListener('chargingtimechange', evaluate);
+                battery.addEventListener('dischargingtimechange', evaluate);
+
+                // Also poll periodically and re-evaluate when page becomes visible because some
+                // Android toggles don't always fire battery events when power-saver is toggled
+                // from the quick settings. Polling is a pragmatic fallback.
+                if (!window._powerSaverInterval) {
+                    window._powerSaverInterval = setInterval(evaluate, 2000);
+                }
+
+                // Re-evaluate when the document becomes visible again
+                const onVisibility = () => { if (document.visibilityState === 'visible') evaluate(); };
+                document.addEventListener('visibilitychange', onVisibility);
+
+                // mark initialized to avoid duplicate registration
+                window._powerSaverInitialized = true;
+            }
+        } catch (e) {
+            console.warn('Power saver detection not available:', e);
+        }
+    }
+
             // --- AUTH FUNCTIONS ---
         
             // Trigger Google Login (show loading overlay & better error handling)
@@ -1029,6 +1099,9 @@
             // --- INIT & EVENTS ---
             window.addEventListener('load', async () => {
                 loadTheme(); 
+                // Start power saver detection early so theme can be adjusted if needed
+                // Await initial evaluation so the app reflects power-saver state on first load
+                try { await detectPowerSaver(); } catch (e) { console.warn('detectPowerSaver failed on load', e); }
                 // NOTE: We do NOT call loadData() immediately anymore.
                 // We wait for Auth state change.
             
@@ -1077,6 +1150,8 @@
                     loadingOverlay.classList.remove("hidden"); // Show loading while fetching data
                 
                     await loadData();
+                    // Ensure power saver detection is active after auth as well and await initial eval
+                    try { await detectPowerSaver(); } catch (e) { console.warn('detectPowerSaver failed after auth', e); }
                     updateTimerSummary();
                 
                     loadingOverlay.classList.add("hidden");
@@ -1236,24 +1311,72 @@
                 updateTimerDisplay();
             }
 
-            window.prevTimerPhase = () => {
+            // Reset timer to initial state (stop and set to prep, reset sets)
+            window.resetTimer = () => {
                 clearInterval(timerIntervalId);
-                if (timerState.phase === 'work') {
-                    if (timerState.currentSet === 1) {
-                        startNextPhase('prep');
-                    } else {
-                        timerState.currentSet--;
+                timerState.running = false;
+                timerState.phase = 'stopped';
+                timerState.currentSet = 1;
+                timerState.timeLeft = timerSettings.prep;
+                document.getElementById("btnTimerToggle").innerText = "▶️";
+
+                const w = document.getElementById("floatingTimer");
+                w.classList.remove("status-prep", "status-work", "status-rest");
+                w.classList.add("status-stopped");
+                updateTimerDisplay();
+
+                // small vibration feedback if supported
+                if(navigator.vibrate) navigator.vibrate(50);
+            }
+
+            // Enhanced prev button: single press -> reset current phase time; double press -> go to previous phase
+            window._lastPrevPress = 0;
+            window.prevTimerPhase = () => {
+                const now = Date.now();
+                const threshold = 600; // ms to detect double-press
+
+                // If second press within threshold -> navigate to previous phase
+                if (window._lastPrevPress && (now - window._lastPrevPress) < threshold) {
+                    // perform original "go to previous phase" behavior
+                    clearInterval(timerIntervalId);
+                    if (timerState.phase === 'work') {
+                        if (timerState.currentSet === 1) {
+                            startNextPhase('prep');
+                        } else {
+                            timerState.currentSet--;
+                            startNextPhase('rest');
+                        }
+                    } else if (timerState.phase === 'rest') {
+                        startNextPhase('work');
+                    } else if (timerState.phase === 'prep') {
+                        timerState.timeLeft = timerSettings.prep;
+                        updateTimerDisplay();
+                        if (timerState.running) timerIntervalId = setInterval(timerTick, 1000);
+                    } else if (timerState.phase === 'finished') {
+                        timerState.currentSet = timerSettings.sets;
                         startNextPhase('rest');
                     }
-                } else if (timerState.phase === 'rest') {
-                    startNextPhase('work');
-                } else if (timerState.phase === 'prep') {
-                    timerState.timeLeft = timerSettings.prep;
+                    // reset detection
+                    window._lastPrevPress = 0;
+                } else {
+                    // single press: reset current phase time to the configured full value
+                    window._lastPrevPress = now;
+                    if (timerState.phase === 'work') {
+                        timerState.timeLeft = timerSettings.work;
+                    } else if (timerState.phase === 'rest') {
+                        timerState.timeLeft = timerSettings.rest;
+                    } else if (timerState.phase === 'prep') {
+                        timerState.timeLeft = timerSettings.prep;
+                    } else if (timerState.phase === 'finished') {
+                        timerState.timeLeft = 0;
+                    }
                     updateTimerDisplay();
-                    if(timerState.running) timerIntervalId = setInterval(timerTick, 1000);
-                } else if (timerState.phase === 'finished') {
-                    timerState.currentSet = timerSettings.sets;
-                    startNextPhase('rest');
+                    if (timerState.running) {
+                        clearInterval(timerIntervalId);
+                        timerIntervalId = setInterval(timerTick, 1000);
+                    }
+                    // clear the single-press marker after threshold to avoid lingering state
+                    setTimeout(() => { if (Date.now() - window._lastPrevPress >= threshold) window._lastPrevPress = 0; }, threshold + 50);
                 }
             }
 
@@ -1761,6 +1884,12 @@
                         sess.exercises.forEach(exName => { container.appendChild(createDetailCard(exName, uniqueId)); uniqueId++; });
                     });
                 }
+
+                // Ensure the new detail view is scrolled to the top
+                try {
+                    container.scrollTop = 0;
+                    window.scrollTo({ top: 0, behavior: 'auto' });
+                } catch (e) { /* ignore if not available */ }
             }
 
             function createDetailCard(exerciseName, uid) {
