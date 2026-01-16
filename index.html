@@ -42,6 +42,11 @@
             --accent: #ffb86b;
             --glass: rgba(255,255,255,0.03);
             --shadow-soft: 0 8px 24px rgba(2,6,23,0.6);
+            /* Solid color overrides for dark mode (avoid gradients) */
+            --cycle-bg-dark: #0f1724; /* solid primary-ish panel */
+            --prev-cycle-bg-dark: #1b2330; /* solid muted panel */
+            --app-container-dark: #071226;
+            --exercise-card-dark: #081426;
         }
 
         /* --- LAYOUT --- */
@@ -77,6 +82,18 @@
         .btn-outline{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--muted);padding:8px 10px}
         .btn-google{background:#1a73e8}
 
+        /* Additional button variants to improve contrast */
+        .btn-dark{background:#2b3440;color:white;box-shadow:none}
+        .btn-dark.btn-small{background:#2b3440;color:white;padding:8px 10px}
+
+        .btn-purple{background:#7c3aed;color:white}
+        /* Make btn-purple more distinct from btn-dark and primary */
+        .btn-purple.btn-small{background:#6d28d9;color:white}
+
+        /* Dark mode adjustments for these buttons */
+        body.dark-mode .btn-dark{background:#1f2937}
+        body.dark-mode .btn-purple{background:#5b21b6}
+
         .session-util-btn{background:transparent;border:1px solid var(--border-color);padding:9px;border-radius:10px;color:var(--muted);min-height:40px}
 
         /* --- THEME TOGGLE --- */
@@ -88,9 +105,20 @@
         .exercise-content{margin-top:10px}
         .exercise-card.done{opacity:.75;border-left:4px solid var(--success)}
 
+        /* Dark mode: force solid card background and remove gradient bleed */
+        body.dark-mode .exercise-card {
+            background: var(--exercise-card-dark) !important;
+            background-image: none !important;
+            border: 1px solid rgba(255,255,255,0.04);
+            box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+        }
+
         .cycle-panel,.prev-cycle-panel{border-radius:14px;padding:14px;color:white;margin-bottom:12px}
         .cycle-panel{background:linear-gradient(135deg,var(--color-primary),#0768a8)}
         .prev-cycle-panel{background:linear-gradient(135deg,#8a8f98,#5d6770)}
+        /* Use solid colors in dark mode to avoid gradients */
+        body.dark-mode .cycle-panel { background: var(--cycle-bg-dark); }
+        body.dark-mode .prev-cycle-panel { background: var(--prev-cycle-bg-dark); }
         /* Improve vertical spacing inside the active cycle panel */
         #activeCyclePanel > * { margin: 6px 0; padding: 6px 0; }
 
