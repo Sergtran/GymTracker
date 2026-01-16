@@ -515,7 +515,7 @@
         </div>
     </div>
 
-    <div id="editModal" class="modal-overlay hidden">
+    <div id="editModal" class="modal-overlay hidden" style="z-index:2101;">
         <div class="modal-content">
             <h3>Editar Ejercicio</h3>
             <label style="font-size:0.9em;">Nombre:</label>
@@ -628,46 +628,60 @@
         <div id="editorView" class="hidden">
             <div class="btn-row">
                 <button class="btn-secondary" style="width: auto;" id="btnBackFromEditor">Atrás</button>
-                <span style="font-weight: bold; align-self:center;">Editar Plan</span>
+                <span style="font-weight: bold; align-self:center; flex:1; text-align:center;">Editar Plan</span>
+                <button class="btn-success" id="btnSaveRoutine" title="Guardar" onclick="window.saveRoutine()" style="width:44px; height:44px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px;">💾</button>
             </div>
 
-            <div style="background:var(--bg-header); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--border-color);">
-                <label style="font-size:0.8em; font-weight:bold; opacity:0.8;">Nombre de la Rutina:</label>
-                <div style="display:flex; gap:5px; margin-top:5px;">
-                    <input type="text" id="editRoutineNameInput" style="margin-bottom:0;" placeholder="Nombre...">
-                    <button class="btn-success" style="width:auto; margin-bottom:0; min-width:80px;" onclick="window.saveRoutine()">Guardar Rutina</button>
+            <!-- Routine name: prominent single-line input with icon save button -->
+            <div style="background:var(--bg-header); padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid var(--border-color);">
+                <label style="font-size:0.8em; font-weight:bold; opacity:0.8; display:block; margin-bottom:6px;">Nombre de la Rutina</label>
+                <input type="text" id="editRoutineNameInput" placeholder="Nombre..." style="padding:12px; font-size:16px; width:100%; box-sizing:border-box;">
+            </div>
+
+            <!-- Sessions header removed (simplified mobile flow) -->
+            <!-- Add new session input (moved above sessions list for better flow on mobile) -->
+            <div style="margin-top:8px; display:flex; gap:8px;">
+                <input type="text" id="newSessionName" placeholder="Nueva sesión (nombre)" style="flex:1; padding:10px;">
+                <button class="btn-primary" id="btnAddSession" style="width:90px;">＋</button>
+            </div>
+
+            <!-- Sessions list: vertical, mobile-friendly -->
+            <div id="editorSessionList" style="display:flex; flex-direction:column; gap:8px; margin-top:8px;"></div>
+
+            <!-- Per-session cards include edit/delete controls; global action row removed -->
+
+            <datalist id="exerciseSuggestions"></datalist>
+            <ul id="editorList" style="margin-top:12px;"></ul>
+        </div>
+
+        <!-- Session Editor Modal: edit exercises for a specific session -->
+        <div id="sessionEditorModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3>Editar Sesión</h3>
+                <label style="font-size:0.9em;">Nombre Sesión:</label>
+                <input type="text" id="modalSessionName" placeholder="Nombre sesión...">
+
+                <h4 style="margin-top:8px; margin-bottom:6px;">Ejercicios</h4>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:6px;">
+                    <input type="text" id="modalExerciseInput" list="exerciseSuggestions" placeholder="Nombre ejercicio..." style="width:100%; padding:10px; box-sizing:border-box;">
+                    <div style="display:flex; gap:8px;">
+                        <select id="modalExerciseType" style="flex:1; min-width:0;">
+                            <option value="standard">🏋️ Peso Estándar</option>
+                            <option value="bw">🤸 Peso Corporal</option>
+                            <option value="weighted">➕ Peso + Lastre</option>
+                            <option value="time">⏱️ Tiempo / Intervalo</option>
+                        </select>
+                        <select id="modalExerciseLaterality" style="flex:1; min-width:0;"><option value="bilateral">Bilateral</option><option value="unilateral">Unilateral</option></select>
+                    </div>
+                    <button class="btn-primary" id="modalBtnAddExercise" style="width:100%;">Añadir</button>
+                </div>
+                <ul id="modalSessionExerciseList" style="max-height:220px; overflow:auto;"></ul>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+                    <button class="btn-secondary" onclick="window.closeSessionEditor()">Cancelar</button>
+                    <button class="btn-success" onclick="window.saveSessionEditor()">Guardar</button>
                 </div>
             </div>
-
-            <!-- Removed day selector: sessions used instead -->
-            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
-                <input type="text" id="newSessionName" placeholder="Nueva sesión (nombre)" style="flex:1;">
-                <button class="btn-primary" id="btnAddSession" style="width:auto; padding:10px;">Añadir Sesión</button>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
-                <select id="editorSessionSelector" style="flex:1;"><option value="">-- Selecciona sesión --</option></select>
-                <button class="btn-danger btn-small" id="btnDeleteSession" style="width:auto;">Eliminar</button>
-            </div>
-            
-            <label style="font-size:0.9em; opacity:0.8;">Tipo de Ejercicio:</label>
-            <select id="exerciseTypeSelector" style="margin-bottom: 5px;">
-                <option value="standard">🏋️ Peso Estándar (Reps + Kg)</option>
-                <option value="bw">🤸 Peso Corporal (Solo Reps)</option>
-                <option value="weighted">➕ Peso Corp. + Lastre (Reps + Kg Extra)</option>
-                <option value="time">⏱️ Tiempo / Intervalo</option>
-            </select>
-            <label style="font-size:0.9em; opacity:0.8; margin-top:6px;">Laterality:</label>
-            <select id="exerciseLateralitySelector" style="margin-bottom: 5px;">
-                <option value="bilateral">Bilateral</option>
-                <option value="unilateral">Unilateral</option>
-            </select>
-
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="exerciseInput" list="exerciseSuggestions" placeholder="Nombre Ejercicio..." style="margin-bottom: 0;">
-                <datalist id="exerciseSuggestions"></datalist>
-                <button class="btn-primary" style="width: 80px; margin-bottom: 0;" id="btnAddExercise">Añadir</button>
-            </div>
-            <ul id="editorList"></ul>
         </div>
 
         <div id="sessionView" class="hidden">
@@ -1883,19 +1897,24 @@
                 }
             }
 
-            document.getElementById("exerciseInput").addEventListener('input', function(e) {
-                const val = e.target.value;
-                // Si el ejercicio existe en nuestra base de datos...
-                if (window.exerciseTypes && window.exerciseTypes[val]) {
-                    const type = window.exerciseTypes[val];
-                    // Cambiar el selector automáticamente
-                    document.getElementById("exerciseTypeSelector").value = type;
-                    // También sincronizar selector de lateralidad si existe
-                    if (window.exerciseLaterality && window.exerciseLaterality[val]) {
-                        document.getElementById("exerciseLateralitySelector").value = window.exerciseLaterality[val];
+            // Bind exercise input only if element exists (it may be removed in the simplified editor flow)
+            (function(){
+                const exInput = document.getElementById("exerciseInput");
+                if (!exInput) return; // nothing to bind
+                exInput.addEventListener('input', function(e) {
+                    const val = e.target.value;
+                    // Si el ejercicio existe en nuestra base de datos...
+                    if (window.exerciseTypes && window.exerciseTypes[val]) {
+                        const type = window.exerciseTypes[val];
+                        // Cambiar el selector automáticamente
+                        const typeSel = document.getElementById("exerciseTypeSelector"); if (typeSel) typeSel.value = type;
+                        // También sincronizar selector de lateralidad si existe
+                        if (window.exerciseLaterality && window.exerciseLaterality[val]) {
+                            const latSel = document.getElementById("exerciseLateralitySelector"); if (latSel) latSel.value = window.exerciseLaterality[val];
+                        }
                     }
-                }
-            });
+                });
+            })();
 
             // --- DETAIL VIEW ---
             window.showRoutineDetail = (index) => {
@@ -2093,64 +2112,132 @@
             }
 
             function renderEditorSessions() {
-                const sel = document.getElementById('editorSessionSelector');
+                const sessionList = document.getElementById('editorSessionList');
                 const list = document.getElementById('editorList');
-                // Preserve previous selection to avoid losing it after re-render
-                const prevSelection = sel ? sel.value : '';
-
-                sel.innerHTML = '<option value="">-- Selecciona sesión --</option>';
+                sessionList.innerHTML = '';
                 list.innerHTML = '';
-                const daySel = document.getElementById('editorDaySelector');
-                // populate sessions for current routine
                 const routine = allRoutines[currentRoutineIndex];
                 if(!routine.sessions) routine.sessions = [ { name: 'General', exercises: [] } ];
+
+                // render each session as a card with edit / delete buttons
                 routine.sessions.forEach((s, idx) => {
-                    const opt = document.createElement('option'); opt.value = idx; opt.innerText = s.name; sel.appendChild(opt);
+                    const card = document.createElement('div');
+                    card.className = 'exercise-card';
+                    card.style.display = 'flex';
+                    card.style.justifyContent = 'space-between';
+                    card.style.alignItems = 'center';
+                    card.style.padding = '10px';
+                    card.style.cursor = 'pointer';
+
+                    const title = document.createElement('div');
+                    title.style.fontWeight = 'bold';
+                    title.innerText = s.name || ('Sesión ' + (idx+1));
+
+                    const actions = document.createElement('div');
+                    actions.style.display = 'flex';
+                    actions.style.gap = '8px';
+
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn-outline btn-small';
+                    editBtn.style.width = '40px'; editBtn.style.height = '36px'; editBtn.style.padding = '0';
+                    editBtn.title = 'Editar';
+                    editBtn.innerText = '✎';
+                    editBtn.onclick = (ev) => { ev.stopPropagation(); window._editingSessionIndex = idx; selectEditorSession(idx); window.openEditModal(); };
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn-outline btn-small';
+                    delBtn.style.width = '40px'; delBtn.style.height = '36px'; delBtn.style.padding = '0';
+                    delBtn.title = 'Eliminar';
+                    delBtn.innerText = '🗑️';
+                    delBtn.onclick = (ev) => {
+                        ev.stopPropagation();
+                        if(!confirm('Eliminar sesión?')) return;
+                        routine.sessions.splice(idx, 1);
+                        markEditorDirty();
+                        // adjust selection safely
+                        window._selectedEditorSession = Math.max(0, idx - 1);
+                        renderEditorSessions();
+                        selectEditorSession(window._selectedEditorSession);
+                    };
+
+                    actions.appendChild(editBtn);
+                    actions.appendChild(delBtn);
+
+                    card.appendChild(title);
+                    card.appendChild(actions);
+
+                    card.onclick = () => selectEditorSession(idx);
+                    sessionList.appendChild(card);
                 });
 
-                // bind add/delete session buttons
-                document.getElementById('btnAddSession').onclick = () => {
-                    const name = document.getElementById('newSessionName').value.trim(); if(!name) return alert('Nombre sesión vacío');
-                    routine.sessions.push({ name: name, exercises: [] });
-                    // do NOT saveData here; mark editor dirty and re-render only
-                    markEditorDirty();
-                    renderEditorSessions(); document.getElementById('newSessionName').value = '';
-                };
-                document.getElementById('btnDeleteSession').onclick = () => {
-                    const v = sel.value; if(!v) return alert('Selecciona sesión');
-                    if(confirm('Eliminar sesión?')) { routine.sessions.splice(parseInt(v),1); markEditorDirty(); renderEditorSessions(); }
-                };
+                // set default selected session if not present
+                if (typeof window._selectedEditorSession === 'undefined' || window._selectedEditorSession < 0 || window._selectedEditorSession >= routine.sessions.length) window._selectedEditorSession = 0;
 
-                sel.onchange = () => {
-                    const v = sel.value; list.innerHTML = '';
-                    if(v === '') return;
-                    const exercises = routine.sessions[parseInt(v)].exercises || [];
-                    exercises.forEach((exEntry, i) => {
-                        const name = getExerciseEntryName(exEntry);
-                        const type = getExerciseType(name);
-                        const later = getExerciseEntryLaterality(exEntry) || 'bilateral';
-                        const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
-                        const li = document.createElement('li');
-                        li.innerHTML = ` <span style="flex-grow:1; margin-right:10px;">${getTypeIcon(type)} ${name} ${laterBadge}</span><div style="display:flex; gap:5px;"><button class="btn-info btn-small" style="margin:0;" onclick="window.openEditModal(${i})">✎</button><button class="btn-danger btn-small" style="margin:0;" onclick="window.deleteFromSession(${i})">X</button></div>`;
-                        list.appendChild(li);
-                    });
-                };
+                // hook add session action (safe bind)
+                const addBtn = document.getElementById('btnAddSession');
+                if (addBtn) {
+                    addBtn.onclick = () => {
+                        const name = document.getElementById('newSessionName').value.trim(); if(!name) return alert('Nombre sesión vacío');
+                        routine.sessions.push({ name: name, exercises: [] });
+                        markEditorDirty();
+                        document.getElementById('newSessionName').value = '';
+                        renderEditorSessions(); selectEditorSession(routine.sessions.length - 1);
+                    };
+                }
 
-                // Restore previous selection if still valid
-                try {
-                    if (prevSelection !== '' && prevSelection !== null && prevSelection !== undefined) {
-                        const idx = parseInt(prevSelection);
-                        if (!isNaN(idx) && idx >= 0 && idx < routine.sessions.length) {
-                            sel.value = prevSelection;
-                            // trigger onchange to populate the list
-                            sel.onchange();
-                            return;
-                        }
-                    }
-                } catch (e) { console.error('Error restoring session selection', e); }
+                const delGlobal = document.getElementById('btnDeleteSession');
+                if (delGlobal) {
+                    delGlobal.onclick = () => {
+                        const sIdx = window._selectedEditorSession;
+                        if(typeof sIdx === 'undefined' || sIdx === null) return alert('Selecciona sesión');
+                        if(!confirm('Eliminar sesión?')) return;
+                        routine.sessions.splice(sIdx,1);
+                        markEditorDirty();
+                        window._selectedEditorSession = Math.max(0, sIdx - 1);
+                        renderEditorSessions(); selectEditorSession(window._selectedEditorSession);
+                    };
+                }
 
-                // initialize empty if no valid previous selection
-                sel.value = '';
+                // finally select current session to populate exercises
+                selectEditorSession(window._selectedEditorSession);
+            }
+
+            // Select a session to show its exercises in the editor list
+            function selectEditorSession(idx) {
+                window._selectedEditorSession = idx;
+                const sessionList = document.getElementById('editorSessionList');
+                Array.from(sessionList.children).forEach((c, i) => {
+                    c.style.border = (i === idx) ? '2px solid var(--color-primary)' : '';
+                    c.style.background = (i === idx) ? 'var(--bg-header)' : '';
+                    c.style.color = (i === idx) ? 'var(--text-header)' : '';
+                });
+                const list = document.getElementById('editorList'); list.innerHTML = '';
+                const routine = allRoutines[currentRoutineIndex];
+                const exercises = (routine.sessions && routine.sessions[idx]) ? routine.sessions[idx].exercises : [];
+                exercises.forEach((exEntry, i) => {
+                    const name = getExerciseEntryName(exEntry);
+                    const type = getExerciseType(name);
+                    const later = getExerciseEntryLaterality(exEntry) || 'bilateral';
+                    const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
+                    const li = document.createElement('li');
+                    li.innerHTML = ` <div style="display:flex; justify-content:space-between; align-items:center;"><div>${getTypeIcon(type)} ${name} ${laterBadge}</div><div style="display:flex; gap:6px;"><button class="btn-info btn-small" style="margin:0;" onclick="window.openExerciseEditInModal(${idx}, ${i})">✎</button><button class="btn-danger btn-small" style="margin:0;" onclick="window.deleteFromSession(${i})">X</button></div></div>`;
+                    list.appendChild(li);
+                });
+            }
+
+            // Open exercise edit modal for a specific session occurrence
+            window.openExerciseEditInModal = (sessionIdx, exIdx) => {
+                tempEditIsSession = true;
+                tempEditSessionIndex = sessionIdx;
+                tempEditIndex = exIdx;
+                const entry = allRoutines[currentRoutineIndex].sessions[sessionIdx].exercises[exIdx];
+                const name = getExerciseEntryName(entry);
+                tempEditOldName = name;
+                document.getElementById('modalEditName').value = name;
+                document.getElementById('modalEditType').value = getExerciseType(name) || 'standard';
+                document.getElementById('modalEditLaterality').value = getExerciseEntryLaterality(entry) || 'bilateral';
+                // show edit modal
+                document.getElementById('editModal').classList.remove('hidden');
             }
 
             // push history when opening routine detail
@@ -2220,73 +2307,109 @@
             }
 
             window.addExerciseToPlan = () => {
-                const input = document.getElementById("exerciseInput");
-                if(!input.value) return;
-                const name = input.value;
-                const type = document.getElementById("exerciseTypeSelector").value;
-                const laterality = document.getElementById("exerciseLateralitySelector").value || 'bilateral';
-
-                const sel = document.getElementById('editorSessionSelector');
-                if(sel && sel.value !== '') {
-                    const sIdx = parseInt(sel.value);
-                    const routine = allRoutines[currentRoutineIndex];
-                    if(!routine.sessions) routine.sessions = [ { name: 'General', exercises: [] } ];
-                    // Store as object so session occurrence can have own laterality
-                    routine.sessions[sIdx].exercises.push({ name: name, laterality: laterality });
-                    // mark editor dirty instead of saving immediately
-                    markEditorDirty();
-                } else {
-                    // fallback to day-based
-                    const day = document.getElementById("editorDaySelector").value;
-                    allRoutines[currentRoutineIndex].week[day].push(name);
-                }
-                exerciseTypes[name] = type;
-                exerciseLaterality[name] = laterality;
-
-                // do not autosave; mark editor dirty so user must press Guardar Rutina
-                markEditorDirty();
-                input.value = "";
-                updateExerciseSuggestions();
-                renderEditorSessions();
+                // Quick-add removed from main editor. Open session editor modal for selected session instead.
+                const sIdx = (typeof window._selectedEditorSession !== 'undefined') ? window._selectedEditorSession : 0;
+                if (typeof sIdx === 'undefined' || sIdx === null) return window.openCreateSessionModal(new Date().toLocaleDateString());
+                // Open session editor for selected session so user can add exercises there
+                window._editingSessionIndex = sIdx;
+                window.openEditModal();
             }
 
             window.deleteFromSession = (exIndex) => {
-                const sel = document.getElementById('editorSessionSelector');
-                if(!sel || sel.value === '') return alert('Selecciona sesión');
-                const sIdx = parseInt(sel.value);
+                const sIdx = (typeof window._selectedEditorSession !== 'undefined') ? window._selectedEditorSession : null;
+                if (sIdx === null) return alert('Selecciona sesión');
                 const routine = allRoutines[currentRoutineIndex];
+                if (!routine || !routine.sessions || !routine.sessions[sIdx]) return alert('Sesión inválida');
                 routine.sessions[sIdx].exercises.splice(exIndex,1);
-                saveData(); renderEditorSessions();
+                markEditorDirty();
+                renderEditorSessions();
             }
 
             // Day-based delete removed - sessions used instead
 
             // --- ADVANCED EDITING (MODAL) ---
             window.openEditModal = (exIndex) => {
-                // Modal edit for session exercises: use selected session
-                const sel = document.getElementById('editorSessionSelector');
-                const sIdx = sel && sel.value !== '' ? parseInt(sel.value) : 0;
-                const currentEntry = (allRoutines[currentRoutineIndex].sessions && allRoutines[currentRoutineIndex].sessions[sIdx]) ? allRoutines[currentRoutineIndex].sessions[sIdx].exercises[exIndex] : '';
-                const currentName = getExerciseEntryName(currentEntry);
-                const currentType = getExerciseType(currentName);
-
-                tempEditIsSession = true;
-                tempEditSessionIndex = sIdx;
-                tempEditIndex = exIndex;
-                tempEditOldName = currentName;
-
-                document.getElementById("modalEditName").value = currentName;
-                document.getElementById("modalEditType").value = currentType;
-                // set laterality if known (per-entry preferred)
-                const lat = getExerciseEntryLaterality(currentEntry) || 'bilateral';
-                document.getElementById("modalEditLaterality").value = lat;
-
-                document.getElementById("editModal").classList.remove("hidden");
+                // Open session editor modal for the currently selected session
+                const sIdx = (typeof window._selectedEditorSession !== 'undefined') ? window._selectedEditorSession : 0;
+                if (!allRoutines[currentRoutineIndex] || !allRoutines[currentRoutineIndex].sessions || !allRoutines[currentRoutineIndex].sessions[sIdx]) return alert('Sesión inválida');
+                // Prepare modal with session data
+                window._editingSessionIndex = sIdx;
+                const session = allRoutines[currentRoutineIndex].sessions[sIdx];
+                document.getElementById('modalSessionName').value = session.name || '';
+                const list = document.getElementById('modalSessionExerciseList'); list.innerHTML = '';
+                (session.exercises || []).forEach((e, i) => {
+                    const name = getExerciseEntryName(e);
+                    const later = getExerciseEntryLaterality(e);
+                    const li = document.createElement('li');
+                    li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><div>${getTypeIcon(getExerciseType(name))} ${name} <span class=\"badge-laterality\">${later === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span></div><div style=\"display:flex; gap:6px;\"><button class=\"btn-info btn-small\" onclick=\"window.openExerciseEditInModal(${sIdx}, ${i})\">✎</button><button class=\"btn-danger btn-small\" onclick=\"window.removeExerciseFromModal(${i})\">X</button></div></div>`;
+                    list.appendChild(li);
+                });
+                document.getElementById('modalExerciseInput').value = '';
+                document.getElementById('sessionEditorModal').classList.remove('hidden');
             }
 
             window.closeEditModal = () => {
                 document.getElementById("editModal").classList.add("hidden");
                 tempEditDay = null; tempEditIndex = null; tempEditOldName = null;
+            }
+
+            // Session editor modal helpers
+            window.closeSessionEditor = () => {
+                document.getElementById('sessionEditorModal').classList.add('hidden');
+                window._editingSessionIndex = null;
+            }
+
+            window.removeExerciseFromModal = (idx) => {
+                const sIdx = window._editingSessionIndex;
+                if (sIdx === undefined || sIdx === null) return;
+                const routine = allRoutines[currentRoutineIndex];
+                if (!routine || !routine.sessions || !routine.sessions[sIdx]) return;
+                routine.sessions[sIdx].exercises.splice(idx,1);
+                markEditorDirty();
+                // refresh modal list
+                const list = document.getElementById('modalSessionExerciseList'); list.innerHTML = '';
+                (routine.sessions[sIdx].exercises || []).forEach((e, i) => {
+                    const name = getExerciseEntryName(e); const later = getExerciseEntryLaterality(e);
+                    const li = document.createElement('li');
+                    li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><div>${getTypeIcon(getExerciseType(name))} ${name} <span class=\"badge-laterality\">${later === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span></div><div style=\"display:flex; gap:6px;\"><button class=\"btn-info btn-small\" onclick=\"window.openExerciseEditInModal(${sIdx}, ${i})\">✎</button><button class=\"btn-danger btn-small\" onclick=\"window.removeExerciseFromModal(${i})\">X</button></div></div>`;
+                    list.appendChild(li);
+                });
+            }
+
+            document.getElementById('modalBtnAddExercise').onclick = () => {
+                const name = document.getElementById('modalExerciseInput').value.trim(); if (!name) return alert('Nombre ejercicio vacío');
+                const type = document.getElementById('modalExerciseType').value;
+                const later = document.getElementById('modalExerciseLaterality').value || 'bilateral';
+                const sIdx = window._editingSessionIndex;
+                if (sIdx === undefined || sIdx === null) return alert('Sesión inválida');
+                const routine = allRoutines[currentRoutineIndex];
+                if (!routine || !routine.sessions || !routine.sessions[sIdx]) return alert('Sesión inválida');
+                routine.sessions[sIdx].exercises.push({ name: name, laterality: later });
+                exerciseTypes[name] = type; exerciseLaterality[name] = later;
+                markEditorDirty();
+                // refresh list
+                const list = document.getElementById('modalSessionExerciseList'); list.innerHTML = '';
+                (routine.sessions[sIdx].exercises || []).forEach((e, i) => {
+                    const nm = getExerciseEntryName(e); const lt = getExerciseEntryLaterality(e);
+                    const li = document.createElement('li');
+                    li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><div>${getTypeIcon(getExerciseType(nm))} ${nm} <span class=\"badge-laterality\">${lt === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span></div><div style=\"display:flex; gap:6px;\"><button class=\"btn-info btn-small\" onclick=\"window.openExerciseEditInModal(${sIdx}, ${i})\">✎</button><button class=\"btn-danger btn-small\" onclick=\"window.removeExerciseFromModal(${i})\">X</button></div></div>`;
+                    list.appendChild(li);
+                });
+                document.getElementById('modalExerciseInput').value = '';
+                updateExerciseSuggestions();
+            };
+
+            window.saveSessionEditor = () => {
+                const sIdx = window._editingSessionIndex;
+                if (sIdx === undefined || sIdx === null) return;
+                const routine = allRoutines[currentRoutineIndex];
+                if (!routine || !routine.sessions || !routine.sessions[sIdx]) return;
+                const newName = document.getElementById('modalSessionName').value.trim();
+                if (!newName) return alert('El nombre de la sesión no puede estar vacío');
+                routine.sessions[sIdx].name = newName;
+                markEditorDirty();
+                closeSessionEditor();
+                renderEditorSessions();
             }
 
             window.saveEditExercise = () => {
@@ -2896,39 +3019,54 @@
             document.getElementById("graphExerciseSelector").onchange = (e) => { renderChart(null, e.target.value, 'main'); };
 
             // --- BINDS ---
-            document.getElementById("btnCreateRoutine").onclick = window.createNewRoutine;
+            // Create routine button: attach a single click listener (use addEventListener to avoid accidental overwrite)
             // Open editor for creating a new routine instead of inline create
-            document.getElementById("btnCreateRoutine").onclick = () => {
-                // Prepare editor for a new routine
-                const empty = { name: '', week: { "Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": [], "Saturday": [], "Sunday": [] }, sessions: [ { name: 'General', exercises: [] } ] };
-                allRoutines.push(empty);
-                currentRoutineIndex = allRoutines.length - 1;
-                // mark that we're creating a new placeholder routine (so discard removes it)
-                window._creatingRoutine = true;
-                // show editor with empty routine
-                hideAllViews();
-                document.getElementById("editorView").classList.remove("hidden");
-                document.getElementById("editRoutineNameInput").value = '';
-                renderEditorSessions();
-                pushAppState('editor', { index: currentRoutineIndex });
-            };
-            document.getElementById("btnAdvanceWeek").onclick = window.advanceCycleWeek;
-            document.getElementById("btnStopCycle").onclick = window.stopActiveCycle;
-            document.getElementById("btnShowHistory").onclick = window.showHistoryView;
-            document.getElementById("btnShowCalendar").onclick = window.showCalendar;
-            // Back button behavior handled by the centralized handler
-            document.getElementById("btnBackFromEditor").onclick = window.handleBackFromEditor;
-            document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
-            // editorDaySelector removed; keep session UI independent
-            document.getElementById("btnAddExercise").onclick = window.addExerciseToPlan;
-            document.getElementById("btnCancelSession").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
-            document.getElementById("btnStartWorkout").onclick = window.startWorkout;
-            document.getElementById("btnFinishSession").onclick = window.finishSession;
-            document.getElementById("btnBackFromHistory").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
-            document.getElementById("btnBackFromDetail").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
-            document.getElementById("btnBackFromCalendar").onclick = () => { try { history.back(); } catch(e){ showMainMenu(); } };
-            document.getElementById("btnPrevMonth").onclick = () => window.changeMonth(-1);
-            document.getElementById("btnNextMonth").onclick = () => window.changeMonth(1);
+            (function(){
+                const btn = document.getElementById("btnCreateRoutine");
+                if (!btn) { console.warn('btnCreateRoutine element not found when binding click'); return; }
+                btn.addEventListener('click', () => {
+                    try {
+                        // Prepare editor for a new routine
+                        const empty = { name: '', week: { "Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": [], "Saturday": [], "Sunday": [] }, sessions: [ { name: 'General', exercises: [] } ] };
+                        allRoutines.push(empty);
+                        currentRoutineIndex = allRoutines.length - 1;
+                        // mark that we're creating a new placeholder routine (so discard removes it)
+                        window._creatingRoutine = true;
+                        // show editor with empty routine
+                        hideAllViews();
+                        const editorView = document.getElementById("editorView"); if (editorView) editorView.classList.remove("hidden");
+                        const nameInput = document.getElementById("editRoutineNameInput"); if (nameInput) nameInput.value = '';
+                        renderEditorSessions();
+                        pushAppState('editor', { index: currentRoutineIndex });
+                    } catch (e) { console.error('Error opening editor for new routine', e); alert('No se pudo abrir el editor: ' + (e && e.message ? e.message : e)); }
+                });
+            })();
+            // Safe binds: only attach handlers if the element exists
+            (function(){
+                const bindClick = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; else console.warn(`Bind skipped: ${id} not found`); };
+                const bindChange = (id, fn) => { const el = document.getElementById(id); if (el) el.onchange = fn; else console.warn(`Bind skipped: ${id} not found`); };
+
+                bindClick('btnAdvanceWeek', window.advanceCycleWeek);
+                bindClick('btnStopCycle', window.stopActiveCycle);
+                bindClick('btnShowHistory', window.showHistoryView);
+                bindClick('btnShowCalendar', window.showCalendar);
+                // Back button behavior handled by the centralized handler
+                bindClick('btnBackFromEditor', window.handleBackFromEditor);
+                // The editor "Add Exercise" button now opens the session editor modal
+                // (quick-add input was removed from the simplified editor flow).
+                bindClick('btnAddExercise', () => { window.openEditModal(); });
+                bindClick('btnCancelSession', () => { try { history.back(); } catch(e){ showMainMenu(); } });
+                bindClick('btnStartWorkout', window.startWorkout);
+                bindClick('btnFinishSession', window.finishSession);
+                bindClick('btnBackFromHistory', () => { try { history.back(); } catch(e){ showMainMenu(); } });
+                bindClick('btnBackFromDetail', () => { try { history.back(); } catch(e){ showMainMenu(); } });
+                bindClick('btnBackFromCalendar', () => { try { history.back(); } catch(e){ showMainMenu(); } });
+                bindClick('btnPrevMonth', () => window.changeMonth(-1));
+                bindClick('btnNextMonth', () => window.changeMonth(1));
+
+                // graph selector change
+                bindChange('graphExerciseSelector', (e) => { renderChart(null, e.target.value, 'main'); });
+            })();
             // Google login button (must bind here because module scope)
             const btnGoogle = document.getElementById("btnGoogleLogin");
             if (btnGoogle) {
