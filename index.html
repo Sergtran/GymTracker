@@ -752,6 +752,7 @@
             async function requestWakeLock() {
                 try {
                     if ('wakeLock' in navigator) {
+                        isWorkoutInProgress = true;
                         wakeLock = await navigator.wakeLock.request('screen');
                         wakeLock.addEventListener('release', () => {
                             console.log('Screen Wake Lock released');
@@ -765,6 +766,7 @@
 
             async function releaseWakeLock() {
                 if (wakeLock !== null) {
+                    isWorkoutInProgress = false;
                     await wakeLock.release();
                     wakeLock = null;
                 }
@@ -796,6 +798,7 @@
             let previousCycle = null;
             let currentRoutineIndex = -1;
             let editingHistoryIndex = null; 
+            let isWorkoutInProgress = false; // Prevent accidental refresh during workout
         
             let tempEditDay = null;
             let tempEditIndex = null;
@@ -816,6 +819,16 @@
             // OLD LOCAL KEY: const LOCAL_KEY = "gym_tracker_local_v31"; 
             // We will make local key dynamic based on UID to support multi-user on same device if needed
             let LOCAL_KEY = "gym_tracker_guest";
+
+            // --- Prevent data loss during workout ---
+            window.addEventListener('beforeunload', (e) => {
+                if (isWorkoutInProgress) {
+                    const confirmationMessage = '¿Estás seguro de que quieres salir? El progreso no guardado se perderá.';
+                    e.preventDefault(); // For some browsers.
+                    e.returnValue = confirmationMessage; // For most browsers.
+                    return confirmationMessage; // For old browsers.
+                }
+            });
 
             // --- TIMER STATE ---
             let timerSettings = { prep: 10, sets: 5, work: 40, rest: 20 };
