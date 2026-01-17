@@ -47,6 +47,12 @@
             --prev-cycle-bg-dark: #1b2330; /* solid muted panel */
             --app-container-dark: #071226;
             --exercise-card-dark: #081426;
+            /* Timer colors: use same hues but slightly darker in dark mode */
+            --timer-bg: #071226; /* darker background for timer */
+            --timer-text: #e6eef6; /* slightly off-white for contrast */
+            --timer-work: #05b684; /* slightly darker than --timer-work in light mode */
+            --timer-rest: #e05555; /* slightly darker rest color */
+            --timer-prep: #e6b24a; /* slightly darker prep color */
         }
 
         /* --- LAYOUT --- */
@@ -132,6 +138,12 @@
         .badge-laterality{background:rgba(14,165,233,0.08);padding:4px 8px;border-radius:8px;color:var(--muted);font-size:12px}
         .badge-type{background:transparent;border:1px solid var(--border-color);padding:4px 8px;border-radius:8px;font-size:12px;color:var(--muted)}
 
+        /* Routines list: remove default bullets and add vertical spacing between items */
+        #routinesList { list-style: none; padding: 0; margin: 0; }
+        #routinesList > li { margin-bottom: 12px; }
+        
+        #editorList { list-style: none; padding: 0; }
+
         /* --- TOGGLE SWITCH --- */
         .toggle-switch{display:inline-block}
         .toggle-switch-checkbox{display:none}
@@ -166,11 +178,65 @@
 
         /* Keep .set-row horizontal on all screen sizes */
 
-        /* --- TIMER --- */
-        .timer-widget{position:fixed;right:18px;bottom:84px;width:64px;height:64px;border-radius:16px;background:var(--timer-bg);color:var(--timer-text);display:flex;align-items:center;justify-content:center;z-index:3000;box-shadow:0 10px 30px rgba(2,6,23,0.45);cursor:pointer}
-        .timer-widget.expanded{width:320px;border-radius:14px;padding:14px;flex-direction:column;right:50%;transform:translateX(50%);bottom:22px}
-        .timer-display-big{font-size:2.2rem;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-weight:700}
-        .timer-status-text{font-weight:700;letter-spacing:1px}
+  /* --- TIMER STYLES --- */
+        .timer-widget {
+            position: fixed;
+            bottom: 80px; right: 20px;
+            width: 60px; height: 60px;
+            background-color: var(--timer-bg);
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 3000;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--timer-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border: 2px solid #555;
+            user-select: none;
+            -webkit-user-select: none; 
+        }
+
+        .timer-widget.expanded {
+            width: min(260px, calc(100vw - 40px)); height: auto;
+            box-sizing: border-box;
+            border-radius: 15px; flex-direction: column;
+            padding: 15px; bottom: 20px;
+            /* Let JS handle horizontal centering to avoid flash/measurement race */
+            left: auto; right: auto; margin: 0;
+            transform: none; cursor: default;
+            max-width: calc(100vw - 40px);
+        }
+
+        .timer-minimized-content { display: flex; flex-direction: column; align-items: center; font-size: 0.7em; font-weight: bold; pointer-events: none; }
+        .timer-icon { font-size: 1.5em; }
+        .timer-expanded-content { width: 100%; text-align: center; display: none; }
+        .timer-widget.expanded .timer-minimized-content { display: none; }
+        .timer-widget.expanded .timer-expanded-content { display: block; }
+
+        .timer-display-big { font-size: 3em; font-family: monospace; font-weight: bold; margin: 10px 0; line-height: 1; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+        .timer-status-text { font-size: 1em; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        
+        .timer-controls { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
+        .btn-timer { padding: 10px; flex: 1; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        
+        .status-prep { background-color: var(--timer-prep) !important; color: #000 !important; border-color: #cc9a06 !important; }
+        .status-prep .timer-status-text { color: #000; }
+        
+        .status-work { background-color: var(--timer-work) !important; color: #fff !important; border-color: #007e33 !important; }
+        .status-work .timer-status-text { color: #fff; }
+        
+        .status-rest { background-color: var(--timer-rest) !important; color: #fff !important; border-color: #c00 !important; }
+        .status-rest .timer-status-text { color: #fff; }
+        
+        .status-stopped { background-color: var(--timer-bg); border-color: #777; }
+
+        .timer-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .timer-config-item label { display: block; font-size: 0.8em; margin-bottom: 2px; }
+
+        /* Keep press feedback while preserving positioning for expanded and collapsed states */
+        .timer-widget.expanded:active { transform: scale(0.95); }
+        .timer-widget:not(.expanded):active { transform: scale(0.95); }
 
         /* responsiveness */
         @media(max-width:520px){
@@ -710,6 +776,15 @@
                 }
             });
 
+            // Recenter timer when page becomes visible again (fixes cases where layout changed while hidden)
+            document.addEventListener('visibilitychange', () => {
+                const el = document.getElementById('floatingTimer');
+                if (document.visibilityState === 'visible' && el && el.classList.contains('expanded')) {
+                    // allow any reflow/paint then center
+                    requestAnimationFrame(() => requestAnimationFrame(() => centerTimerToApp()));
+                }
+            });
+
             // --- STATE ---
             let allRoutines = [];
             let workoutHistory = [];
@@ -1208,14 +1283,88 @@
                 requestWakeLock();
             }
 
+            // Center the expanded timer relative to the app container (not the viewport)
+            function centerTimerToApp() {
+                const el = document.getElementById("floatingTimer");
+                const app = document.querySelector('.app-container');
+                if (!el) return;
+                // clear transform since we'll position by px
+                el.style.transform = 'none';
+                if (app && el.classList.contains('expanded')) {
+                    const appRect = app.getBoundingClientRect();
+                    // read width after expanded class applied
+                    // force reflow so updated class styles take effect
+                    const elWidth = el.offsetWidth || 260;
+                    let left = Math.round(appRect.left + (appRect.width / 2) - (elWidth / 2));
+                    // enforce small margins so it doesn't touch screen edges
+                    const minLeft = 8; const maxLeft = Math.max(window.innerWidth - elWidth - 8, 8);
+                    if (left < minLeft) left = minLeft; if (left > maxLeft) left = maxLeft;
+                    // ensure fixed positioning and remove auto margins that could interfere
+                    el.style.position = 'fixed';
+                    el.style.marginLeft = '0'; el.style.marginRight = '0';
+                    el.style.left = left + 'px';
+                    el.style.right = 'auto';
+                }
+            }
+
             window.expandTimer = () => {
-                document.getElementById("floatingTimer").classList.add("expanded");
+                const el = document.getElementById("floatingTimer");
+                if (!el) return;
+                const app = document.querySelector('.app-container');
+                if (!app) return;
+
+                // 🔥 Reset inline styles so we start from a neutral state
+                el.style.left = '';
+                el.style.right = '';
+                el.style.margin = '';
+                el.style.width = '';
+                el.style.transform = 'none';
+                el.style.position = 'fixed';
+
+                // Apply expanded class (layout may change)
+                el.classList.add("expanded");
+
+                // Double RAF to ensure styles/layout are stable, then measure+center
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const appRect = app.getBoundingClientRect();
+                        const elWidth = el.offsetWidth || 260;
+                        let left = Math.round(appRect.left + (appRect.width - elWidth) / 2);
+                        const minLeft = 8;
+                        const maxLeft = Math.max(window.innerWidth - elWidth - 8, 8);
+                        if (left < minLeft) left = minLeft; if (left > maxLeft) left = maxLeft;
+                        el.style.left = left + 'px';
+                        el.style.right = 'auto';
+                    });
+                });
             }
 
             window.minimizeTimer = (event) => {
                 if(event) event.stopPropagation();
-                document.getElementById("floatingTimer").classList.remove("expanded");
+                const el = document.getElementById("floatingTimer");
+                if (!el) return;
+                el.classList.remove("expanded");
+
+                // 🔥 Clean all possible inline styles set while expanded so next expand starts fresh
+                el.style.left = '';
+                el.style.right = '';
+                el.style.top = '';
+                el.style.bottom = '';
+                el.style.width = '';
+                el.style.margin = '';
+                el.style.transform = '';
+                el.style.position = 'fixed';
+
+                // Explicit minimized position
+                el.style.right = '20px';
+                el.style.bottom = '80px';
             }
+
+            // Recenter on resize if expanded
+            window.addEventListener('resize', () => {
+                const el = document.getElementById('floatingTimer');
+                if (el && el.classList.contains('expanded')) centerTimerToApp();
+            });
 
             window.toggleTimerState = () => {
                 if (timerState.running) {
