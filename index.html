@@ -226,70 +226,60 @@
 
         /* Keep .set-row horizontal on all screen sizes */
 
-  /* --- TIMER STYLES --- */
-        .timer-widget {
+        /* --- TIMER WIDGET (Bottom Sheet / Banner Style) --- */
+        #timer-widget {
             position: fixed;
-            bottom: 80px; right: 20px;
-            width: 60px; height: 60px;
-            background-color: var(--timer-bg);
-            border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            z-index: 3000;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--timer-text);
-            cursor: pointer;
-            transition: all 0.3s ease;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-container);
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            z-index: 9999;
+            transition: transform 0.3s ease, height 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
             overflow: hidden;
-            border: 2px solid #555;
-            user-select: none;
-            -webkit-user-select: none; 
+            height: 240px; /* Default State: Expanded */
         }
 
-        .timer-widget.expanded {
-            width: min(260px, calc(100vw - 40px)); height: auto;
-            box-sizing: border-box;
-            border-radius: 15px; flex-direction: column;
-            padding: 15px; bottom: 20px;
-            /* Let JS handle horizontal centering to avoid flash/measurement race */
-            left: auto; right: auto; margin: 0;
-            transform: none; cursor: default;
-            max-width: calc(100vw - 40px);
-        }
+        /* Minimized State */
+        #timer-widget.minimized { height: 70px; }
 
-        .timer-minimized-content { display: flex; flex-direction: column; align-items: center; font-size: 0.7em; font-weight: bold; pointer-events: none; }
-        .timer-icon { font-size: 1.5em; }
-        .timer-expanded-content { width: 100%; text-align: center; display: none; }
-        .timer-widget.expanded .timer-minimized-content { display: none; }
-        .timer-widget.expanded .timer-expanded-content { display: block; }
+        .timer-content { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
 
-        .timer-display-big { font-size: 3em; font-family: monospace; font-weight: bold; margin: 10px 0; line-height: 1; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
-        .timer-status-text { font-size: 1em; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
-        
-        .timer-controls { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; }
-        .btn-timer { padding: 10px; flex: 1; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        
-        .status-prep { background-color: var(--timer-prep) !important; color: #000 !important; border-color: #cc9a06 !important; }
-        .status-prep .timer-status-text { color: #000; }
-        
-        .status-work { background-color: var(--timer-work) !important; color: #fff !important; border-color: #007e33 !important; }
-        .status-work .timer-status-text { color: #fff; }
-        
-        .status-rest { background-color: var(--timer-rest) !important; color: #fff !important; border-color: #c00 !important; }
-        .status-rest .timer-status-text { color: #fff; }
-        
-        .status-stopped { background-color: var(--timer-bg); border-color: #777; }
+        /* Minimized Layout Adjustments */
+        #timer-widget.minimized .timer-content { flex-direction: row; align-items: center; justify-content: space-between; padding: 0 15px; }
 
-        .timer-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .timer-config-item label { display: block; font-size: 0.8em; margin-bottom: 2px; }
+        /* Use a single consistent text color for the timer widget (controlled by --timer-text) */
+        #timer-widget { color: var(--timer-text); }
+        #timer-display { font-size: 3.5rem; font-weight: 800; color: inherit; font-variant-numeric: tabular-nums; text-align: center; margin: 10px 0; transition: all 0.3s ease; }
+        #timer-widget.minimized #timer-display { font-size: 1.8rem; margin: 0; order: 1; }
 
-        /* Keep press feedback while preserving positioning for expanded and collapsed states */
-        .timer-widget.expanded:active { transform: scale(0.95); }
-        .timer-widget:not(.expanded):active { transform: scale(0.95); }
+        .timer-controls { display: flex; justify-content: center; gap: 15px; width: 100%; transition: all 0.3s ease; }
+        #timer-widget.minimized .timer-controls { width: auto; gap: 10px; order: 2; }
 
-        /* responsiveness */
+        /* Removed legacy toggle button - entire widget is clickable to minimize/maximize */
+
+        /* Cleaner timer buttons: transparent background, subtle border and hover */
+        .timer-btn { width: 50px; height: 50px; border-radius: 12px; border: 1px solid rgba(16,24,40,0.06); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; color: var(--text-main); padding: 0; transition: transform .12s ease, box-shadow .12s ease, background .12s ease; }
+        .timer-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16,24,40,0.06); background: rgba(0,0,0,0.03); }
+        .timer-btn:active { transform: translateY(0); }
+        .timer-btn.primary { background: var(--color-primary); color: #fff; width: 64px; height: 64px; font-size: 1.4rem; border-radius: 14px; border: none; box-shadow: 0 8px 20px rgba(14,165,233,0.12); }
+        #timer-widget.minimized .timer-btn { width: 44px; height: 44px; font-size: 1rem; }
+
+        /* preserve status background colors used by JS (prep/work/rest/stopped)
+           Text color should remain the same (inherited from #timer-widget) */
+        #timer-widget.status-prep { background-color: var(--timer-prep) !important; }
+        #timer-widget.status-work { background-color: var(--timer-work) !important; }
+        #timer-widget.status-rest { background-color: var(--timer-rest) !important; }
+        #timer-widget.status-stopped { background-color: var(--timer-bg); }
+
         @media(max-width:520px){
             .app-container{padding:16px;border-radius:12px}
-            .timer-widget.expanded{width:92%;right:4%;transform:none}
+            #timer-widget { height: 200px; }
+            #timer-widget.minimized { height: 64px; }
             .modal-content{max-width:420px;padding:14px}
         }
     </style>
@@ -545,33 +535,22 @@
         </div>
     </div>
 
-    <div id="floatingTimer" class="timer-widget status-stopped hidden">
-        
-        <div class="timer-minimized-content">
-            <span class="timer-icon">⏱️</span>
-            <span id="miniTimerDisplay" style="font-size:0.9em;">00:00</span>
-        </div>
+    <div id="timer-widget" class="status-stopped hidden">
+        <!-- Legacy toggle removed: clicking the widget (except buttons) toggles minimize/maximize -->
 
-        <div class="timer-expanded-content">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span id="timerPhaseLabel" class="timer-status-text">READY</span>
-                <button style="background:transparent; border:none; color:inherit; font-size:1.4em; padding:0; width:auto; opacity:0.8;" onclick="window.minimizeTimer(event)">🔽</button>
-            </div>
-            
-            <div id="mainTimerDisplay" class="timer-display-big">00:00</div>
-            
-            <div style="font-size:0.9em; opacity:0.9; margin-bottom:5px;">
-                Set: <span id="timerSetDisplay">1</span> / <span id="timerTotalSetsDisplay">5</span>
-            </div>
-
+        <div class="timer-content">
+            <div id="timer-display" onclick="if(document.getElementById('timer-widget') && document.getElementById('timer-widget').classList.contains('minimized')) (window.minimizeTimer && window.minimizeTimer())">00:00</div>
+            <div style="font-size:0.9em; opacity:0.9; margin-bottom:5px; text-align:center;">Set: <span id="timerSetDisplay">1</span> / <span id="timerTotalSetsDisplay">5</span></div>
             <div class="timer-controls">
-                <button class="btn-timer" style="background-color:rgba(0,0,0,0.3);" onclick="window.prevTimerPhase()">⏮️</button>
-                <button id="btnTimerToggle" class="btn-timer" style="background-color:rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5);" onclick="window.toggleTimerState()">▶️</button>
-                <button id="btnTimerStop" class="btn-timer" style="background-color:rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.5);" onclick="window.resetTimer()">⏹️</button>
-                <button class="btn-timer" style="background-color:rgba(0,0,0,0.3);" onclick="window.skipTimerPhase()">⏭️</button>
+                <button class="timer-btn btn-secondary" onclick="window.prevTimerPhase()">⏮️</button>
+                <button id="btnTimerToggle" class="timer-btn btn-secondary" onclick="window.toggleTimerState()">▶️</button>
+                <button id="btnTimerStop" class="timer-btn btn-secondary" onclick="window.resetTimer()">⏹️</button>
+                <button class="timer-btn btn-secondary" onclick="window.skipTimerPhase()">⏭️</button>
             </div>
-            <div style="font-size:0.7em; opacity:0.7; margin-top:5px;">Mantén presionado para cerrar</div>
+            
         </div>
+        <!-- hidden legacy elements for compatibility -->
+        <div style="display:none;"><span id="mainTimerDisplay">00:00</span><span id="miniTimerDisplay">00:00</span><span id="timerPhaseLabel">READY</span></div>
     </div>
 
     <div class="app-container hidden" id="mainAppContainer">
@@ -826,12 +805,12 @@
                 }
             });
 
-            // Recenter timer when page becomes visible again (fixes cases where layout changed while hidden)
+            // Ensure timer layout/padding is correct when page becomes visible again
             document.addEventListener('visibilitychange', () => {
-                const el = document.getElementById('floatingTimer');
-                if (document.visibilityState === 'visible' && el && el.classList.contains('expanded')) {
-                    // allow any reflow/paint then center
-                    requestAnimationFrame(() => requestAnimationFrame(() => centerTimerToApp()));
+                const el = document.getElementById('timer-widget');
+                if (document.visibilityState === 'visible' && el && !el.classList.contains('hidden')) {
+                    // Restore body padding according to minimized state
+                    document.body.style.paddingBottom = el.classList.contains('minimized') ? '80px' : '250px';
                 }
             });
 
@@ -1143,32 +1122,35 @@
                 // NOTE: We do NOT call loadData() immediately anymore.
                 // We wait for Auth state change.
             
-                // ATTACH LONG PRESS EVENTS TO TIMER
-                const timerWidget = document.getElementById("floatingTimer");
-            
+            // ATTACH LONG PRESS EVENTS TO TIMER (now bottom banner)
+                const timerWidget = document.getElementById("timer-widget");
+
                 const startPress = (e) => {
                     if(e.target.tagName === 'BUTTON') return;
                     isLongPress = false;
                     pressTimer = setTimeout(() => {
                         isLongPress = true;
                         window.stopTimer(); 
-                        timerWidget.classList.add("hidden");
+                        if(timerWidget) timerWidget.classList.add("hidden");
                         if(navigator.vibrate) navigator.vibrate(50);
                     }, 1000); 
                 };
 
                 const cancelPress = () => { clearTimeout(pressTimer); };
 
-                timerWidget.addEventListener("mousedown", startPress);
-                timerWidget.addEventListener("mouseup", cancelPress);
-                timerWidget.addEventListener("mouseleave", cancelPress);
-                timerWidget.addEventListener("touchstart", startPress, {passive: true});
-                timerWidget.addEventListener("touchend", cancelPress);
-                timerWidget.addEventListener("click", (e) => {
-                    if(isLongPress) return; 
-                    if(e.target.tagName === 'BUTTON') return; 
-                    window.expandTimer();
-                });
+                if (timerWidget) {
+                    timerWidget.addEventListener("mousedown", startPress);
+                    timerWidget.addEventListener("mouseup", cancelPress);
+                    timerWidget.addEventListener("mouseleave", cancelPress);
+                    timerWidget.addEventListener("touchstart", startPress, {passive: true});
+                    timerWidget.addEventListener("touchend", cancelPress);
+                    timerWidget.addEventListener("click", (e) => {
+                        if(isLongPress) return; 
+                        if(e.target.tagName === 'BUTTON') return; 
+                        // toggle minimized state
+                        minimizeTimer();
+                    });
+                }
                 // Initialize history state so back button behaviour is predictable
                 try { history.replaceState({ view: 'main' }, '', '#main'); } catch (e) { /* ignore */ }
             });
@@ -1215,7 +1197,7 @@
                 updateTimerSummary();
 
                 window.stopTimer();
-                document.getElementById("floatingTimer").classList.add("hidden");
+                const tw = document.getElementById("timer-widget"); if(tw) tw.classList.add("hidden");
             
                 releaseWakeLock();
                 // push history for main menu
@@ -1329,102 +1311,65 @@
             }
 
             window.activateTimer = () => {
-                const w = document.getElementById("floatingTimer");
+                const w = document.getElementById("timer-widget");
+                if (!w) return;
                 w.classList.remove("hidden");
-                w.classList.remove("status-stopped");
-                w.classList.add("status-stopped"); 
-            
-                timerState.phase = 'stopped';
+
+                // Open in PREP mode by default (show prep UI, but do not start running)
+                timerState.phase = 'prep';
                 timerState.running = false;
                 timerState.currentSet = 1;
                 timerState.timeLeft = timerSettings.prep;
 
+                // update status classes to reflect PREP visual state
+                w.classList.remove("status-stopped", "status-work", "status-rest", "status-prep");
+                w.classList.add("status-prep");
+
+                // ensure toggle button shows play state
+                const btn = document.getElementById("btnTimerToggle"); if (btn) btn.innerText = "▶️";
+
                 updateTimerDisplay();
-                window.expandTimer(); 
+                // default start expanded
+                if(w.classList.contains('minimized')) w.classList.remove('minimized');
+                // ensure body padding to avoid overlap
+                document.body.style.paddingBottom = '250px';
                 requestWakeLock();
             }
 
-            // Center the expanded timer relative to the app container (not the viewport)
-            function centerTimerToApp() {
-                const el = document.getElementById("floatingTimer");
-                const app = document.querySelector('.app-container');
-                if (!el) return;
-                // clear transform since we'll position by px
-                el.style.transform = 'none';
-                if (app && el.classList.contains('expanded')) {
-                    const appRect = app.getBoundingClientRect();
-                    // read width after expanded class applied
-                    // force reflow so updated class styles take effect
-                    const elWidth = el.offsetWidth || 260;
-                    let left = Math.round(appRect.left + (appRect.width / 2) - (elWidth / 2));
-                    // enforce small margins so it doesn't touch screen edges
-                    const minLeft = 8; const maxLeft = Math.max(window.innerWidth - elWidth - 8, 8);
-                    if (left < minLeft) left = minLeft; if (left > maxLeft) left = maxLeft;
-                    // ensure fixed positioning and remove auto margins that could interfere
-                    el.style.position = 'fixed';
-                    el.style.marginLeft = '0'; el.style.marginRight = '0';
-                    el.style.left = left + 'px';
-                    el.style.right = 'auto';
+            // Toggle minimized/expanded state of the bottom timer widget
+            window.minimizeTimer = () => {
+                const w = document.getElementById('timer-widget');
+                if (!w) return;
+                // If hidden, show expanded
+                if (w.classList.contains('hidden')) {
+                    w.classList.remove('hidden');
+                    w.classList.remove('minimized');
+                    document.body.style.paddingBottom = '250px';
+
+                    // When reopening from closed state, default to PREP mode
+                    timerState.phase = 'prep';
+                    timerState.running = false;
+                    timerState.currentSet = 1;
+                    timerState.timeLeft = timerSettings.prep;
+                    w.classList.remove("status-stopped", "status-work", "status-rest", "status-prep");
+                    w.classList.add("status-prep");
+                    const btn = document.getElementById("btnTimerToggle"); if (btn) btn.innerText = "▶️";
+
+                    updateTimerDisplay();
+                    return;
                 }
+                w.classList.toggle('minimized');
+                if (w.classList.contains('minimized')) document.body.style.paddingBottom = '80px';
+                else document.body.style.paddingBottom = '250px';
             }
 
-            window.expandTimer = () => {
-                const el = document.getElementById("floatingTimer");
-                if (!el) return;
-                const app = document.querySelector('.app-container');
-                if (!app) return;
+            // Legacy floating timer helpers removed — banner-style #timer-widget uses minimizeTimer() toggle
 
-                // 🔥 Reset inline styles so we start from a neutral state
-                el.style.left = '';
-                el.style.right = '';
-                el.style.margin = '';
-                el.style.width = '';
-                el.style.transform = 'none';
-                el.style.position = 'fixed';
-
-                // Apply expanded class (layout may change)
-                el.classList.add("expanded");
-
-                // Double RAF to ensure styles/layout are stable, then measure+center
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        const appRect = app.getBoundingClientRect();
-                        const elWidth = el.offsetWidth || 260;
-                        let left = Math.round(appRect.left + (appRect.width - elWidth) / 2);
-                        const minLeft = 8;
-                        const maxLeft = Math.max(window.innerWidth - elWidth - 8, 8);
-                        if (left < minLeft) left = minLeft; if (left > maxLeft) left = maxLeft;
-                        el.style.left = left + 'px';
-                        el.style.right = 'auto';
-                    });
-                });
-            }
-
-            window.minimizeTimer = (event) => {
-                if(event) event.stopPropagation();
-                const el = document.getElementById("floatingTimer");
-                if (!el) return;
-                el.classList.remove("expanded");
-
-                // 🔥 Clean all possible inline styles set while expanded so next expand starts fresh
-                el.style.left = '';
-                el.style.right = '';
-                el.style.top = '';
-                el.style.bottom = '';
-                el.style.width = '';
-                el.style.margin = '';
-                el.style.transform = '';
-                el.style.position = 'fixed';
-
-                // Explicit minimized position
-                el.style.right = '20px';
-                el.style.bottom = '80px';
-            }
-
-            // Recenter on resize if expanded
+            // adjust bottom padding on resize if timer visible and not minimized
             window.addEventListener('resize', () => {
-                const el = document.getElementById('floatingTimer');
-                if (el && el.classList.contains('expanded')) centerTimerToApp();
+                const el = document.getElementById('timer-widget');
+                if (!el) return;
+                if (!el.classList.contains('minimized') && !el.classList.contains('hidden')) document.body.style.paddingBottom = '250px';
             });
 
             window.toggleTimerState = () => {
@@ -1442,17 +1387,18 @@
                     }
                 }
             }
-
             window.stopTimer = () => {
                 clearInterval(timerIntervalId);
                 timerState.running = false;
                 timerState.phase = 'stopped';
                 timerState.timeLeft = 0;
-                document.getElementById("btnTimerToggle").innerText = "▶️";
-            
-                const w = document.getElementById("floatingTimer");
-                w.classList.remove("status-prep", "status-work", "status-rest");
-                w.classList.add("status-stopped");
+                const btn = document.getElementById("btnTimerToggle"); if (btn) btn.innerText = "▶️";
+
+                const w = document.getElementById("timer-widget");
+                if (w) {
+                    w.classList.remove("status-prep", "status-work", "status-rest");
+                    w.classList.add("status-stopped");
+                }
                 updateTimerDisplay();
             }
 
@@ -1463,11 +1409,13 @@
                 timerState.phase = 'stopped';
                 timerState.currentSet = 1;
                 timerState.timeLeft = timerSettings.prep;
-                document.getElementById("btnTimerToggle").innerText = "▶️";
+                const btn = document.getElementById("btnTimerToggle"); if (btn) btn.innerText = "▶️";
 
-                const w = document.getElementById("floatingTimer");
-                w.classList.remove("status-prep", "status-work", "status-rest");
-                w.classList.add("status-stopped");
+                const w = document.getElementById("timer-widget");
+                if (w) {
+                    w.classList.remove("status-prep", "status-work", "status-rest");
+                    w.classList.add("status-stopped");
+                }
                 updateTimerDisplay();
 
                 // small vibration feedback if supported
@@ -1544,23 +1492,25 @@
                 timerState.running = true;
                 document.getElementById("btnTimerToggle").innerText = "⏸️";
 
-                const w = document.getElementById("floatingTimer");
-                w.classList.remove("status-prep", "status-work", "status-rest", "status-stopped");
+
+                const btn = document.getElementById("btnTimerToggle"); if (btn) btn.innerText = "⏸️";
+                const w = document.getElementById("timer-widget");
+                if (w) w.classList.remove("status-prep", "status-work", "status-rest", "status-stopped");
 
                 if (phase === 'prep') {
                     timerState.timeLeft = timerSettings.prep;
-                    w.classList.add("status-prep");
+                    if (w) w.classList.add("status-prep");
                 } else if (phase === 'work') {
                     timerState.timeLeft = timerSettings.work;
-                    w.classList.add("status-work");
+                    if (w) w.classList.add("status-work");
                 } else if (phase === 'rest') {
                     timerState.timeLeft = timerSettings.rest;
-                    w.classList.add("status-rest");
+                    if (w) w.classList.add("status-rest");
                 } else if (phase === 'finished') {
                     timerState.running = false;
                     timerState.timeLeft = 0;
-                    document.getElementById("btnTimerToggle").innerText = "▶️";
-                    w.classList.add("status-stopped"); 
+                    const b = document.getElementById("btnTimerToggle"); if (b) b.innerText = "▶️";
+                    if (w) w.classList.add("status-stopped");
                     if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
                     alert("¡Timer Terminado!");
                     return;
@@ -1599,9 +1549,9 @@
                 const min = Math.floor(timerState.timeLeft / 60);
                 const sec = timerState.timeLeft % 60;
                 const timeStr = `${min}:${sec < 10 ? '0'+sec : sec}`;
-            
-                document.getElementById("mainTimerDisplay").innerText = timeStr;
-                document.getElementById("miniTimerDisplay").innerText = timeStr;
+                const mainEl = document.getElementById("mainTimerDisplay"); if (mainEl) mainEl.innerText = timeStr;
+                const miniEl = document.getElementById("miniTimerDisplay"); if (miniEl) miniEl.innerText = timeStr;
+                const visibleEl = document.getElementById("timer-display"); if (visibleEl) visibleEl.innerText = timeStr;
                 document.getElementById("timerSetDisplay").innerText = timerState.currentSet;
                 document.getElementById("timerTotalSetsDisplay").innerText = timerSettings.sets;
 
@@ -1611,7 +1561,7 @@
                 if (timerState.phase === 'rest') label = "REST";
                 if (timerState.phase === 'finished') label = "DONE";
             
-                document.getElementById("timerPhaseLabel").innerText = label;
+                const phaseEl = document.getElementById("timerPhaseLabel"); if (phaseEl) phaseEl.innerText = label;
             }
 
             // --- RENDER CYCLE PANELS ---
@@ -2695,26 +2645,30 @@
             window.setupSession = (index) => {
                 currentRoutineIndex = index;
                 hideAllViews();
-                document.getElementById("sessionView").classList.remove("hidden");
-                document.getElementById("sessionSetup").classList.remove("hidden");
-                document.getElementById("sessionForm").classList.add("hidden");
-                document.getElementById("floatingTimer").classList.add("hidden");
+                const sv = document.getElementById("sessionView"); if (sv) sv.classList.remove("hidden");
+                const ss = document.getElementById("sessionSetup"); if (ss) ss.classList.remove("hidden");
+                const sf = document.getElementById("sessionForm"); if (sf) sf.classList.add("hidden");
+                const twEl = document.getElementById("timer-widget"); if (twEl) twEl.classList.add("hidden");
                 editingHistoryIndex = null;
 
                 // If routine has sessions, populate selector
                 const routine = allRoutines[currentRoutineIndex];
                 const sel = document.getElementById('sessionChoice');
-                sel.innerHTML = '';
+                if (sel) sel.innerHTML = '';
                 if (routine && routine.sessions && routine.sessions.length > 0) {
-                    routine.sessions.forEach((s, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = s.name; sel.appendChild(opt); });
+                    routine.sessions.forEach((s, idx) => { if (!sel) return; const opt = document.createElement('option'); opt.value = idx; opt.innerText = s.name; sel.appendChild(opt); });
                 } else {
-                    sel.innerHTML = '<option value="0">General</option>';
+                    if (sel) sel.innerHTML = '<option value="0">General</option>';
                 }
-                document.getElementById('btnStartWorkout').onclick = () => {
-                    const sIdx = document.getElementById('sessionChoice').value;
-                    const exercises = (routine.sessions && routine.sessions[sIdx]) ? routine.sessions[sIdx].exercises : [];
-                    startWorkoutWithExercises(exercises);
-                };
+                const btnStart = document.getElementById('btnStartWorkout');
+                if (btnStart) {
+                    btnStart.onclick = () => {
+                        const choice = document.getElementById('sessionChoice');
+                        const sIdx = choice ? choice.value : 0;
+                        const exercises = (routine.sessions && routine.sessions[sIdx]) ? routine.sessions[sIdx].exercises : [];
+                        startWorkoutWithExercises(exercises);
+                    };
+                }
                 pushAppState('session', { index: index });
             }
 
