@@ -1770,8 +1770,8 @@
 
                     if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) dayDiv.classList.add("today");
                 
-                    const workoutEntry = workoutHistory.find(w => w.date === dateStr);
-                    if (workoutEntry) {
+                    const entriesForDay = workoutHistory.filter(w => w.date === dateStr);
+                    if (entriesForDay && entriesForDay.length > 0) {
                         dayDiv.classList.add("has-workout");
                         const marker = document.createElement("div");
                         marker.className = "cal-marker";
@@ -1782,19 +1782,16 @@
                         document.querySelectorAll(".cal-day").forEach(d => d.classList.remove("selected"));
                         dayDiv.classList.add("selected");
                         // Show details and provide quick edit/create controls
-                        showCalendarDayDetails(dateStr, workoutEntry);
+                        showCalendarDayDetails(dateStr, entriesForDay);
                         const detailBox = document.getElementById('calendarDayDetails');
                         const content = document.getElementById('calDetailContent');
                         // Append action buttons
                         const actions = document.createElement('div');
                         actions.style.marginTop = '10px';
-                        if (workoutEntry) {
-                            actions.innerHTML = `<div class="cal-actions"><button class='btn-success' id='calEditBtn'>Editar</button><button class='btn-outline' id='calCloneBtn'>Clonar</button><button class='btn-danger' id='calDeleteBtn'>Eliminar</button></div>`;
-                            content.appendChild(actions);
-                            document.getElementById('calEditBtn').onclick = () => editCalendarEntry(dateStr);
-                            document.getElementById('calCloneBtn').onclick = () => openCloneModal(dateStr);
-                            document.getElementById('calDeleteBtn').onclick = () => deleteCalendarEntry(dateStr);
-                        } else {
+                        // If there are no entries for the day, show a Create button.
+                        // When there are entries, per-entry Edit/Clone/Delete buttons are rendered
+                        // inside the details panel (avoid duplicating them here).
+                        if (!entriesForDay || entriesForDay.length === 0) {
                             actions.innerHTML = `<div style="display:flex; gap:8px;"><button class='btn-primary' id='calCreateBtn'>Crear Sesión</button></div>`;
                             content.appendChild(actions);
                             document.getElementById('calCreateBtn').onclick = () => createCalendarEntry(dateStr);
@@ -1806,9 +1803,12 @@
 
             // CLONE MODAL HANDLERS (exposed globally)
             window._cloneSourceDate = null;
-            window.openCloneModal = function(sourceDateStr) {
+            window.openCloneModal = function(sourceDateStr, entryIndex) {
                 window._cloneSourceDate = sourceDateStr;
-                const entry = workoutHistory.find(h => h.date === sourceDateStr);
+                window._cloneSourceIndex = (typeof entryIndex === 'number') ? entryIndex : null;
+                // choose entry by index if provided, otherwise pick the first matching
+                const matches = workoutHistory.filter(h => h.date === sourceDateStr);
+                const entry = (typeof entryIndex === 'number' && matches[entryIndex]) ? matches[entryIndex] : matches[0];
                 if (!entry) { alert('Fuente no encontrada'); return; }
                 const infoEl = document.getElementById('cloneSourceInfo');
                 if (infoEl) infoEl.innerText = `${entry.routineName} (${entry.sessionName || ''}) - ${entry.date}`;
@@ -1822,6 +1822,7 @@
             window.closeCloneModal = function() {
                 const modal = document.getElementById('cloneModal'); if (modal) modal.classList.add('hidden');
                 window._cloneSourceDate = null;
+                window._cloneSourceIndex = null;
             };
 
             window.cloneEntryToDate = function() {
@@ -1831,7 +1832,12 @@
                 // convert YYYY-MM-DD to locale date string used by app
                 const d = new Date(target + 'T00:00:00');
                 const targetStr = d.toLocaleDateString();
-                const srcEntry = workoutHistory.find(h => h.date === window._cloneSourceDate);
+                let srcEntry = null;
+                if (window._cloneSourceDate && typeof window._cloneSourceIndex === 'number') {
+                    const matches = workoutHistory.filter(h => h.date === window._cloneSourceDate);
+                    srcEntry = matches[window._cloneSourceIndex] || null;
+                }
+                if (!srcEntry && window._cloneSourceDate) srcEntry = workoutHistory.find(h => h.date === window._cloneSourceDate);
                 if (!srcEntry) { alert('Entrada fuente no encontrada'); window.closeCloneModal(); return; }
 
                 const existingIdx = workoutHistory.findIndex(h => h.date === targetStr);
@@ -1865,33 +1871,93 @@
                 alert('Sesión eliminada');
             };
 
-            function showCalendarDayDetails(dateStr, workout) {
+            function showCalendarDayDetails(dateStr, workouts) {
                 const detailBox = document.getElementById("calendarDayDetails");
                 const content = document.getElementById("calDetailContent");
                 document.getElementById("calDetailDate").innerText = `Detalles del ${dateStr}`;
                 detailBox.classList.remove("hidden");
 
-                if (!workout) { content.innerHTML = "<p style='text-align:center; opacity:0.6;'>Día de descanso 💤</p>"; return; }
+                if (!workouts || workouts.length === 0) { content.innerHTML = "<p style='text-align:center; opacity:0.6;'>Día de descanso 💤</p>"; return; }
 
-                let html = `<div><strong style="font-size:1.1em; color:var(--color-primary);">${workout.routineName}</strong> (${workout.sessionName || ''})</div><ul style="margin-top:10px;">`;
-            
-                workout.details.forEach(d => {
-                    let badge = "";
-                    if (d.pr === 'new') badge = '<span class="badge-pr">🏆 PR</span>';
-                
-                    const type = getExerciseType(d.name);
-                    const later = (exerciseLaterality[d.name] || 'bilateral');
-                    const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
-                    const setsStr = d.sets.map(s => formatSetDisplay(type, s)).join(", ");
+                // Render each workout entry for that day. Multiple routines may exist on same date.
+                let html = '';
+                workouts.forEach((workout, idx) => {
+                    html += `<div style="border-bottom:1px solid var(--border-color); padding:8px 0; margin-bottom:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div><strong style="font-size:1.05em; color:var(--color-primary);">${workout.routineName}</strong> <span style="opacity:0.8;">${workout.sessionName || ''}</span></div>
+                                    <div style="display:flex; gap:8px;"><button class='btn-success btn-small' onclick="editSpecificCalendarEntry('${dateStr}', ${idx})">Editar</button><button class='btn-outline btn-small' onclick="openCloneModal('${dateStr}', ${idx})">Clonar</button><button class='btn-danger btn-small' onclick="deleteSpecificCalendarEntry('${dateStr}', ${idx})">Eliminar</button></div>
+                                </div>
+                                <ul style="margin-top:8px;">
+                    `;
 
-                    html += `<li style="padding:5px 0; border:none; display:block;">
-                                <div class="cal-item-title"><strong>${getTypeIcon(type)} ${d.name}</strong><span class="badges">${laterBadge} ${badge}</span></div>
-                                <div style="font-size:0.9em; opacity:0.8;">${setsStr}</div>
-                             </li>`;
+                    workout.details.forEach(d => {
+                        let badge = "";
+                        if (d.pr === 'new') badge = '<span class="badge-pr">🏆 PR</span>';
+                        const type = getExerciseType(d.name);
+                        const later = (d.laterality || exerciseLaterality[d.name] || 'bilateral');
+                        const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
+                        const setsStr = d.sets.map(s => formatSetDisplay(type, s)).join(", ");
+
+                        html += `<li style="padding:5px 0; border:none; display:block;">
+                                    <div class="cal-item-title"><strong>${getTypeIcon(type)} ${d.name}</strong><span class="badges">${laterBadge} ${badge}</span></div>
+                                    <div style="font-size:0.9em; opacity:0.8;">${setsStr}</div>
+                                 </li>`;
+                    });
+
+                    html += `</ul></div>`;
                 });
-                html += `</ul>`;
+
                 content.innerHTML = html;
             }
+
+            // Helpers for operating on specific entries when multiple exist on same date
+            window.editSpecificCalendarEntry = (dateStr, index) => {
+                const entries = workoutHistory.filter(w => w.date === dateStr);
+                const entry = entries[index];
+                if (!entry) return alert('Entrada no encontrada');
+                const globalIdx = workoutHistory.findIndex(w => w === entry);
+                if (globalIdx === -1) return alert('Entrada no encontrada en historial');
+                // Open editor for the specific global history entry
+                window.editCalendarEntryByIndex(globalIdx);
+            }
+
+            window.editCalendarEntryByIndex = (globalIdx) => {
+                if (typeof globalIdx !== 'number' || globalIdx < 0 || globalIdx >= workoutHistory.length) { alert('Entrada inválida'); return; }
+                const entry = workoutHistory[globalIdx];
+                const dateStr = entry.date;
+                // Try to find a routine index for nicer UI
+                const rIdx = allRoutines.findIndex(r => r.name === entry.routineName);
+                if (rIdx !== -1) currentRoutineIndex = rIdx;
+
+                editingHistoryIndex = globalIdx;
+                calendarEditDate = dateStr;
+
+                hideAllViews();
+                document.getElementById('sessionView').classList.remove('hidden');
+                document.getElementById('sessionSetup').classList.add('hidden');
+                document.getElementById('sessionForm').classList.remove('hidden');
+                // Build exercises list from entry details
+                const exercises = entry.details.map(d => d.name);
+                currentSessionExercises = exercises.slice();
+                currentSessionName = entry.sessionName || '';
+                renderSessionCards(exercises, entry);
+                requestWakeLock();
+                pushAppState('session', { index: currentRoutineIndex });
+            }
+
+            window.deleteSpecificCalendarEntry = (dateStr, index) => {
+                const entries = workoutHistory.filter(w => w.date === dateStr);
+                const entry = entries[index];
+                if (!entry) return alert('Entrada no encontrada');
+                const globalIdx = workoutHistory.findIndex(w => w === entry);
+                if (globalIdx === -1) return alert('Entrada no encontrada en historial');
+                if (!confirm('¿Eliminar esta sesión?')) return;
+                workoutHistory.splice(globalIdx, 1);
+                saveData(); renderCalendar(); renderHistoryList();
+                const detailBox = document.getElementById('calendarDayDetails'); if (detailBox) detailBox.classList.add('hidden');
+            }
+
+            // Adjust openCloneModal to accept optional index (we'll open clone modal for specific entry if provided)
 
             // Allow editing or creating an entry from the calendar
             async function editCalendarEntry(dateStr) {
