@@ -144,6 +144,10 @@
         
         #editorList { list-style: none; padding: 0; }
 
+        /* Modal session exercise list: remove default list markers (::marker) */
+        #modalSessionExerciseList { list-style: none; padding: 0; margin: 0; }
+        #modalSessionExerciseList li::marker { content: none; }
+
         /* --- TOGGLE SWITCH --- */
         .toggle-switch{display:inline-block}
         .toggle-switch-checkbox{display:none}
@@ -158,6 +162,17 @@
         .cal-day.today{box-shadow:0 4px 14px rgba(14,165,233,0.12);border-color:var(--color-primary)}
         .cal-day.has-workout{background:linear-gradient(180deg,#e6ffef,#f0fff8);color:var(--success);font-weight:700}
         .cal-day.selected{outline:3px solid rgba(14,165,233,0.12);transform:scale(1.03)}
+
+        /* Reduce default UL indent inside calendar detail content to match app spacing */
+        #calDetailContent ul { margin: 5px 0 0 8px; padding-left: 12px; }
+        #calDetailContent ul li { padding: 5px 0; list-style: none; margin-left: 0; }
+
+        /* Keep badges visually attached to the exercise title and avoid line-breaks between title and badges */
+        #calDetailContent .cal-item-title { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        #calDetailContent .cal-item-title .badges { display: inline-flex; gap: 6px; align-items: center; flex-shrink: 0; }
+        #calDetailContent .badge-pr, #calDetailContent .badge-laterality { white-space: nowrap; }
+        /* Make PR badge more compact inside calendar detail so it visually matches laterality badge */
+        #calDetailContent .badge-pr { padding: 3px 6px; font-size: 12px; border-radius: 8px; }
 
         /* --- MODALS --- */
         .modal-overlay{position:fixed;inset:0;background:linear-gradient(rgba(2,6,23,0.45),rgba(2,6,23,0.45));backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:2200;padding:18px}
@@ -1607,6 +1622,30 @@
                 return 'Peso';
             }
 
+            // Helper: convert kg to lbs (1 kg = 2.20462 lb)
+            function kgToLbs(kg) {
+                const n = Number(kg);
+                if (!isFinite(n)) return '';
+                return (n * 2.20462).toFixed(1);
+            }
+
+            // Format a single set for display including kg and lb where applicable
+            function formatSetDisplay(type, s) {
+                if (!s) return '';
+                if (type === 'bw') return `${s.reps} reps`;
+                if (type === 'time') return `${s.weight}s / ${s.reps}s`;
+                // weighted or standard with weight
+                const w = s.weight || s.weight === 0 ? s.weight : '';
+                const reps = s.reps || '';
+                if (type === 'weighted') {
+                    if (w !== '') return `+${w}kg (${kgToLbs(w)}lb) (${reps})`;
+                    return `+${reps}`;
+                }
+                // standard
+                if (w !== '') return `${reps}x${w}kg (${kgToLbs(w)}lb)`;
+                return `${reps}`;
+            }
+
             // Helpers to support exercise entries that can be either a string (legacy)
             // or an object { name, laterality } to allow per-occurrence lateralities.
             function getExerciseEntryName(e) {
@@ -1810,15 +1849,10 @@
                     const type = getExerciseType(d.name);
                     const later = (exerciseLaterality[d.name] || 'bilateral');
                     const laterBadge = later === 'unilateral' ? '<span class="badge-laterality">Unilateral</span>' : '';
-                    const setsStr = d.sets.map(s => {
-                        if (type === 'bw') return `${s.reps} reps`;
-                        if (type === 'weighted') return `+${s.weight}kg (${s.reps})`;
-                        if (type === 'time') return `${s.weight}s / ${s.reps}s`;
-                        return `${s.reps}x${s.weight}`;
-                    }).join(", ");
+                    const setsStr = d.sets.map(s => formatSetDisplay(type, s)).join(", ");
 
                     html += `<li style="padding:5px 0; border:none; display:block;">
-                                <div><strong>${getTypeIcon(type)} ${d.name}</strong> ${laterBadge} ${badge}</div>
+                                <div class="cal-item-title"><strong>${getTypeIcon(type)} ${d.name}</strong><span class="badges">${laterBadge} ${badge}</span></div>
                                 <div style="font-size:0.9em; opacity:0.8;">${setsStr}</div>
                              </li>`;
                 });
@@ -2018,12 +2052,7 @@
 
                 if (pastData.length > 0) {
                     const last = pastData[0];
-                    const setsStr = last.sets.map(s => {
-                        if (type === 'bw') return `${s.reps}`;
-                        if (type === 'weighted') return `+${s.weight}`;
-                        if (type === 'time') return `${s.weight}s ON / ${s.reps}s OFF`;
-                        return `${s.reps}x${s.weight}`;
-                    }).join(", ");
+                    const setsStr = last.sets.map(s => formatSetDisplay(type, s)).join(", ");
                     // For display, show the routine/session configured laterality (entryLater)
                     const lastLater = entryLater;
                     const lastLaterBadge = `<span class="badge-laterality">${lastLater === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
@@ -2590,7 +2619,7 @@
                 pushAppState('session', { index: index });
             }
 
-            function startWorkoutWithExercises(exercises) {
+            async function startWorkoutWithExercises(exercises) {
                 if(!exercises || exercises.length === 0) { alert('No hay ejercicios en esta sesión.'); return; }
                 const routine = allRoutines[currentRoutineIndex];
                 currentSessionExercises = exercises.slice();
@@ -2604,6 +2633,8 @@
                 } else { editingHistoryIndex = null; document.getElementById('resumeBadge').style.display = 'none'; }
                 document.getElementById('sessionSetup').classList.add('hidden');
                 document.getElementById('sessionForm').classList.remove('hidden');
+                // try to fetch any cloud draft for this session before rendering
+                try { await fetchSessionDraftFromCloud(); } catch(e) { console.error('fetch draft failed', e); }
                 renderSessionCards(exercises, resumeData);
                 requestWakeLock();
             }
@@ -2639,6 +2670,9 @@
                 const container = document.getElementById("workoutInputsContainer");
                 container.innerHTML = "";
                 sessionChartInstances = {}; 
+                // Try to load an autosaved session draft for this routine+date
+                let sessionDraft = null;
+                try { sessionDraft = loadSessionDraft(); } catch (e) { console.error('loadSessionDraft error', e); }
 
                 exercises.forEach((exEntry, i) => {
                     const div = document.createElement("div");
@@ -2651,11 +2685,18 @@
                     // If resuming a session, prefer the laterality stored in that saved entry
                     let savedSets = null;
                     let savedLaterality = null;
+                    // Priority: resumeData (previously saved session) -> autosaved draft -> none
                     if (resumeData) {
                         const savedEx = resumeData.details.find(d => d.name === name);
                         if (savedEx) {
                             savedSets = savedEx.sets;
                             savedLaterality = savedEx.laterality;
+                        }
+                    } else if (sessionDraft && Array.isArray(sessionDraft.exercises)) {
+                        const draftEx = sessionDraft.exercises.find(d => d.name === name);
+                        if (draftEx) {
+                            savedSets = draftEx.sets || null;
+                            savedLaterality = draftEx.laterality || null;
                         }
                     }
 
@@ -2664,12 +2705,7 @@
 
                     if (historyEntry) {
                         const detail = historyEntry.details.find(d => d.name === name);
-                        const setString = detail.sets.map(s => {
-                            if(type === 'bw') return `${s.reps}`;
-                            if(type === 'weighted') return `+${s.weight}`;
-                            if(type === 'time') return `${s.weight}s / ${s.reps}s`;
-                            return `${s.reps}x${s.weight}`;
-                        }).join(", ");
+                        const setString = detail.sets.map(s => formatSetDisplay(type, s)).join(", ");
                         // Use routine/session laterality for the 'Anterior' display to match header
                         const entryLater = getExerciseEntryLaterality(exEntry) || exerciseLaterality[name] || 'bilateral';
                         const histLater = entryLater;
@@ -2740,6 +2776,19 @@
 
                     if (savedSets && savedSets.length > 0) savedSets.forEach(s => window.addSetRow(i, s, type));
                     else window.addSetRow(i, null, type);
+
+                    // restore done state and note from draft
+                    try {
+                        if (sessionDraft && sessionDraft.exercises) {
+                            const d = sessionDraft.exercises.find(xx => xx.name === name);
+                            if (d) {
+                                const chk = document.getElementById(`exercise_done_chk_${i}`);
+                                if (chk) { chk.checked = !!d.done; if (chk.checked) document.getElementById(`exercise_card_${i}`).classList.add('done'); }
+                                const noteEl = document.getElementById(`input_note_${i}`);
+                                if (noteEl && d.note) { noteEl.classList.remove('hidden'); noteEl.value = d.note; }
+                            }
+                        }
+                    } catch (e) { /* ignore */ }
                 });
             }
 
@@ -2771,6 +2820,7 @@
                     sessionStorage.removeItem(`exercise_done_${i}`);
                     if (cardEl) cardEl.classList.remove('done');
                 }
+                try { saveSessionDraft(); } catch (e) { /* ignore */ }
             }
 
             window.addSetRow = (exIndex, data = null, type = 'standard') => {
@@ -2810,7 +2860,7 @@
 
                     inputHtml = `
                         <label>#${count}</label>
-                        <input type="number" inputmode="numeric" placeholder="Reps" class="input-reps" value="${repsVal}">
+                        <input type="number" inputmode="numeric" placeholder="Reps" class="input-reps" value="${repsVal}" oninput="window.saveSessionDraft()">
                         <input type="number" inputmode="decimal" placeholder="${kgPh}" class="input-kg" oninput="window.syncWeight(this, 'kg')" value="${kgVal}">
                         <input type="number" inputmode="decimal" placeholder="${lbsPh}" class="input-lbs" oninput="window.syncWeight(this, 'lbs')" value="${lbsVal}">
                     `;
@@ -2818,6 +2868,7 @@
 
                 row.innerHTML = inputHtml;
                 container.appendChild(row);
+                try { saveSessionDraft(); } catch (e) { /* ignore */ }
             }
 
             window.syncWeight = (input, type) => {
@@ -2828,6 +2879,7 @@
                 if (isNaN(val)) { if(type === 'kg') lbsInput.value = ''; else kgInput.value = ''; return; }
                 if (type === 'kg') lbsInput.value = (val * 2.20462).toFixed(1);
                 else kgInput.value = (val / 2.20462).toFixed(1);
+                try { saveSessionDraft(); } catch (e) { /* ignore */ }
             }
 
             // SYNC TIME (WORK / REST)
@@ -2854,6 +2906,7 @@
                 } else {
                     secInput.value = (val * 60).toFixed(0);
                 }
+                try { saveSessionDraft(); } catch (e) { /* ignore */ }
             }
 
             window.finishSession = () => {
@@ -2955,7 +3008,100 @@
                 editingHistoryIndex = null; 
                 // Clear calendar edit state
                 calendarEditDate = null;
+                try { clearSessionDraft(); } catch (e) { /* ignore */ }
                 showMainMenu();
+            }
+
+            // Autosave session draft to localStorage per user + routine + date
+            function _sessionDraftKey() {
+                const uid = currentUserUID || 'guest';
+                const routine = (allRoutines[currentRoutineIndex] && allRoutines[currentRoutineIndex].name) ? allRoutines[currentRoutineIndex].name : 'unknown';
+                const date = calendarEditDate || new Date().toLocaleDateString();
+                return `gym_session_draft_${uid}_${routine}_${date}`;
+            }
+
+            window.saveSessionDraft = async function() {
+                try {
+                    const container = document.getElementById('workoutInputsContainer');
+                    if (!container) return;
+                    const exercises = [];
+                    const cards = container.querySelectorAll('[id^="exercise_card_"]');
+                    cards.forEach((card, i) => {
+                        const nameEl = card.querySelector('.exercise-title');
+                        const rawName = nameEl ? nameEl.innerText : `exercise_${i}`;
+                        // strip leading emoji/type if present
+                        const name = rawName.replace(/^\S+\s+/, '').trim();
+                        const noteEl = document.getElementById(`input_note_${i}`);
+                        const doneChk = document.getElementById(`exercise_done_chk_${i}`);
+                        const setsContainer = document.getElementById(`sets_container_${i}`);
+                        const sets = [];
+                        if (setsContainer) {
+                            Array.from(setsContainer.children).forEach(row => {
+                                if (!row.classList.contains('set-row')) return;
+                                const reps = row.querySelector('.input-reps');
+                                const kg = row.querySelector('.input-kg');
+                                const work = row.querySelector('.input-work-sec');
+                                if (reps) sets.push({ reps: reps.value, weight: kg ? kg.value : 0 });
+                                else if (work) sets.push({ reps: row.querySelector('.input-rest-sec') ? row.querySelector('.input-rest-sec').value : 0, weight: work.value });
+                            });
+                        }
+                        exercises.push({ name: name, note: noteEl ? noteEl.value : '', done: doneChk ? !!doneChk.checked : false, sets: sets });
+                    });
+                    const key = _sessionDraftKey();
+                    const payload = { date: calendarEditDate || new Date().toLocaleDateString(), routineIndex: currentRoutineIndex, exercises: exercises, savedAt: new Date().toISOString() };
+                    // keep in-memory copy for immediate render
+                    window._sessionDraft = payload;
+
+                    // If user is logged in and online, save draft directly to cloud (merge)
+                    if (currentUserUID && navigator.onLine) {
+                        try {
+                            const docRef = doc(db, 'gym_app', currentUserUID);
+                            const obj = { sessionDrafts: {} };
+                            obj.sessionDrafts[key] = payload;
+                            await setDoc(docRef, obj, { merge: true });
+                        } catch (e) {
+                            console.error('Failed to save session draft to cloud', e);
+                        }
+                    }
+                } catch (e) { console.error('saveSessionDraft failed', e); }
+            }
+
+            function loadSessionDraft() {
+                // return in-memory draft if available (cloud fetch may populate it)
+                return window._sessionDraft || null;
+            }
+
+            async function clearSessionDraft() {
+                try {
+                    const key = _sessionDraftKey();
+                    window._sessionDraft = null;
+                    if (currentUserUID && navigator.onLine) {
+                        try {
+                            // set the draft entry to null in cloud (merge)
+                            const docRef = doc(db, 'gym_app', currentUserUID);
+                            const obj = { sessionDrafts: {} };
+                            obj.sessionDrafts[key] = null;
+                            await setDoc(docRef, obj, { merge: true });
+                        } catch (e) { console.error('Failed to clear session draft in cloud', e); }
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
+            async function fetchSessionDraftFromCloud() {
+                try {
+                    window._sessionDraft = null;
+                    if (!currentUserUID) return null;
+                    if (!navigator.onLine) return null;
+                    const docSnap = await getDoc(doc(db, 'gym_app', currentUserUID));
+                    if (!docSnap.exists()) return null;
+                    const data = docSnap.data();
+                    const key = _sessionDraftKey();
+                    if (data && data.sessionDrafts && data.sessionDrafts[key]) {
+                        window._sessionDraft = data.sessionDrafts[key];
+                        return window._sessionDraft;
+                    }
+                } catch (e) { console.error('fetchSessionDraftFromCloud failed', e); }
+                return null;
             }
 
             // --- COMMON FUNCTIONS ---
@@ -3067,8 +3213,8 @@
                         const type = getExerciseType(d.name);
                         const later = d.laterality || exerciseLaterality[d.name] || 'bilateral';
                         const laterBadge = `<span class="badge-laterality">${later === 'unilateral' ? 'Unilateral' : 'Bilateral'}</span>`;
-                        const setsStr = d.sets.map(s => type === 'bw' ? s.reps : (type === 'weighted' ? `+${s.weight}` : (type === 'time' ? `${s.weight}s / ${s.reps}s` : `${s.reps}x${s.weight}kg`))).join(", ");
-                        detailsHtml += `<div>• ${getTypeIcon(type)} ${d.name} ${laterBadge}: ${setsStr} ${badge}</div>`;
+                        const setsStr = d.sets.map(s => formatSetDisplay(type, s)).join(", ");
+                        detailsHtml += `<div>• ${getTypeIcon(type)} ${d.name} <span class="badges">${laterBadge} ${badge}</span>: ${setsStr}</div>`;
                     });
                     li.innerHTML = `<div style="width:100%;"><div style="font-weight:bold;">${entry.routineName} (${entry.sessionName || ''}) <span style="font-weight:normal;font-size:0.8em;opacity:0.7;">${entry.date}</span></div><div style="font-size:0.9em;margin-top:5px;opacity:0.9;">${detailsHtml}</div></div>`;
                     list.appendChild(li);
