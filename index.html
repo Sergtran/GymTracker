@@ -891,6 +891,35 @@
                 }
             }
 
+            // Utility: scroll window and session containers to top when session view opens
+            function scrollToTopOfSession() {
+                try {
+                    const sv = document.getElementById('sessionView');
+                    if (sv) sv.scrollTop = 0;
+                    const wc = document.getElementById('workoutInputsContainer');
+                    if (wc) wc.scrollTop = 0;
+                    const app = document.querySelector('.app-container');
+                    if (app) window.scrollTo({ top: app.offsetTop, behavior: 'smooth' });
+                    else window.scrollTo({ top: 0, behavior: 'smooth' });
+                } catch (e) { /* ignore */ }
+            }
+
+            // General utility: scroll the app to the very top when changing views
+            function scrollToTopAll() {
+                try {
+                    // reset any scroll within main containers
+                    const app = document.querySelector('.app-container');
+                    if (app) {
+                        // Ensure app container is scrolled into view
+                        app.scrollTop = 0;
+                        // Jump to top of document to avoid partial viewport offsets
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'auto' });
+                    }
+                } catch (e) { /* ignore */ }
+            }
+
     // --- POWER SAVER DETECTION (force dark mode while device is in power save) ---
     window._forcedByPowerSaver = false;
     window._prevUserTheme = null;
@@ -1200,6 +1229,8 @@
                 const tw = document.getElementById("timer-widget"); if(tw) tw.classList.add("hidden");
             
                 releaseWakeLock();
+                // ensure we're at top when showing main menu
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) {}
                 // push history for main menu
                 pushAppState('main');
             }
@@ -1333,6 +1364,9 @@
                 if(w.classList.contains('minimized')) w.classList.remove('minimized');
                 // ensure body padding to avoid overlap
                 document.body.style.paddingBottom = '250px';
+                // ensure session view is visible at top
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) { }
                 requestWakeLock();
             }
 
@@ -1692,7 +1726,7 @@
             }
 
             // --- CALENDAR ---
-            window.showCalendar = () => { hideAllViews(); document.getElementById("calendarView").classList.remove("hidden"); renderCalendar(); pushAppState('calendar'); }
+            window.showCalendar = () => { hideAllViews(); document.getElementById("calendarView").classList.remove("hidden"); renderCalendar(); try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch(e) {} pushAppState('calendar'); }
             
             window.changeMonth = (offset) => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset); renderCalendar(); }
 
@@ -1891,6 +1925,9 @@
                 currentSessionExercises = exercises.slice();
                 currentSessionName = entry.sessionName || '';
                 renderSessionCards(exercises, entry);
+                // ensure session view is visible at top
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) { }
                 requestWakeLock();
                 pushAppState('session', { index: currentRoutineIndex });
             }
@@ -1931,6 +1968,8 @@
                 currentSessionExercises = exercises.slice();
                 currentSessionName = entry.sessionName || '';
                 renderSessionCards(exercises, entry);
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) { }
                 requestWakeLock();
                 pushAppState('session', { index: currentRoutineIndex });
             }
@@ -1999,6 +2038,7 @@
                 document.getElementById('sessionSetup').classList.add('hidden');
                 document.getElementById('sessionForm').classList.remove('hidden');
                 renderSessionCards(currentSessionExercises, null);
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 requestWakeLock();
                 pushAppState('session', { index: currentRoutineIndex });
                 window.closeCreateSessionModal();
@@ -2075,6 +2115,8 @@
                     container.scrollTop = 0;
                     window.scrollTo({ top: 0, behavior: 'auto' });
                 } catch (e) { /* ignore if not available */ }
+                // Also ensure global app is at top
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) {}
             }
 
             function createDetailCard(exerciseName, uid) {
@@ -2238,6 +2280,8 @@
                 clearEditorDirty();
                 updateExerciseSuggestions();
                 renderEditorSessions();
+                // ensure top position when opening editor
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) {}
                 pushAppState('editor', { index: index });
             }
 
@@ -2669,6 +2713,9 @@
                         startWorkoutWithExercises(exercises);
                     };
                 }
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
+                // also ensure global top
+                try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) { }
                 pushAppState('session', { index: index });
             }
 
@@ -2689,6 +2736,7 @@
                 // try to fetch any cloud draft for this session before rendering
                 try { await fetchSessionDraftFromCloud(); } catch(e) { console.error('fetch draft failed', e); }
                 renderSessionCards(exercises, resumeData);
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 requestWakeLock();
             }
 
@@ -2716,6 +2764,7 @@
                 // If a session is stored in routine.sessions and user chose one previously, try to use it.
                 renderSessionCards(exercises, resumeData);
 
+                try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 requestWakeLock();
             }
 
@@ -3248,7 +3297,7 @@
                 if(chartDiv.classList.contains("hidden")) { chartDiv.classList.remove("hidden"); renderChart(i, exName, 'session'); } else { chartDiv.classList.add("hidden"); }
             }
 
-            window.showHistoryView = () => { hideAllViews(); document.getElementById("historyView").classList.remove("hidden"); populateGraphSelector(); renderHistoryList(); pushAppState('history'); }
+            window.showHistoryView = () => { hideAllViews(); document.getElementById("historyView").classList.remove("hidden"); populateGraphSelector(); renderHistoryList(); try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch(e) {} pushAppState('history'); }
         
         
             function populateGraphSelector() {
@@ -3303,6 +3352,7 @@
                         const editorView = document.getElementById("editorView"); if (editorView) editorView.classList.remove("hidden");
                         const nameInput = document.getElementById("editRoutineNameInput"); if (nameInput) nameInput.value = '';
                         renderEditorSessions();
+                        try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) {}
                         pushAppState('editor', { index: currentRoutineIndex });
                     } catch (e) { console.error('Error opening editor for new routine', e); alert('No se pudo abrir el editor: ' + (e && e.message ? e.message : e)); }
                 });
