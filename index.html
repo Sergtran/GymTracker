@@ -1154,6 +1154,8 @@
             // ATTACH LONG PRESS EVENTS TO TIMER (now bottom banner)
                 const timerWidget = document.getElementById("timer-widget");
 
+                
+
                 const startPress = (e) => {
                     if(e.target.tagName === 'BUTTON') return;
                     isLongPress = false;
@@ -1161,6 +1163,7 @@
                         isLongPress = true;
                         window.stopTimer(); 
                         if(timerWidget) timerWidget.classList.add("hidden");
+                        try { adjustSessionFormForTimer(); } catch (e) {}
                         if(navigator.vibrate) navigator.vibrate(50);
                     }, 1000); 
                 };
@@ -1178,7 +1181,24 @@
                         if(e.target.tagName === 'BUTTON') return; 
                         // toggle minimized state
                         minimizeTimer();
+                        // always re-check and correct session padding to avoid desync
+                        try { 
+                            // small timeout to allow class toggles to be applied
+                            setTimeout(() => adjustSessionFormForTimer(), 60);
+                        } catch(e) {}
                     });
+
+                    // Observe class changes (hidden/minimized/status) to keep session form padding in sync
+                    try {
+                        const mo = new MutationObserver(() => adjustSessionFormForTimer());
+                        mo.observe(timerWidget, { attributes: true, attributeFilter: ['class'] });
+                        // Also observe sessionForm visibility changes to update padding when it appears/disappears
+                        const sessionEl = document.getElementById('sessionForm');
+                        if (sessionEl) {
+                            const mo2 = new MutationObserver(() => adjustSessionFormForTimer());
+                            mo2.observe(sessionEl, { attributes: true, attributeFilter: ['class', 'style'] });
+                        }
+                    } catch (e) { /* ignore */ }
                 }
                 // Initialize history state so back button behaviour is predictable
                 try { history.replaceState({ view: 'main' }, '', '#main'); } catch (e) { /* ignore */ }
@@ -1314,6 +1334,20 @@
             });
 
             // --- TIMER LOGIC ---
+            // Ensure session form gains bottom padding to account for fixed timer overlay
+            function adjustSessionFormForTimer() {
+                try {
+                    const w = document.getElementById('timer-widget');
+                    const sf = document.getElementById('sessionForm');
+                    if (!sf) return;
+                    if (!w || w.classList.contains('hidden')) {
+                        sf.style.paddingBottom = '';
+                        return;
+                    }
+                    const h = w.offsetHeight || (w.classList.contains('minimized') ? 70 : 240);
+                    sf.style.paddingBottom = (h + 16) + 'px';
+                } catch (e) { /* ignore */ }
+            }
             window.openTimerConfig = () => {
                 document.getElementById("cfgPrep").value = timerSettings.prep;
                 document.getElementById("cfgSets").value = timerSettings.sets;
@@ -1364,6 +1398,7 @@
                 if(w.classList.contains('minimized')) w.classList.remove('minimized');
                 // ensure body padding to avoid overlap
                 document.body.style.paddingBottom = '250px';
+                adjustSessionFormForTimer();
                 // ensure session view is visible at top
                 try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) { }
@@ -1392,9 +1427,14 @@
                     updateTimerDisplay();
                     return;
                 }
+                // Toggle minimized and then force a recalculation of padding once styles settle
                 w.classList.toggle('minimized');
                 if (w.classList.contains('minimized')) document.body.style.paddingBottom = '80px';
                 else document.body.style.paddingBottom = '250px';
+                // Allow browser to apply the class/height change then recalc
+                setTimeout(() => {
+                    try { adjustSessionFormForTimer(); } catch (e) {}
+                }, 80);
             }
 
             // Legacy floating timer helpers removed — banner-style #timer-widget uses minimizeTimer() toggle
@@ -1434,6 +1474,8 @@
                     w.classList.add("status-stopped");
                 }
                 updateTimerDisplay();
+                // ensure padding recalculation once stop state applied
+                setTimeout(() => { try { adjustSessionFormForTimer(); } catch(e) {} }, 40);
             }
 
             // Reset timer to initial state (stop and set to prep, reset sets)
@@ -1451,6 +1493,9 @@
                     w.classList.add("status-stopped");
                 }
                 updateTimerDisplay();
+
+                // update session form padding after reset
+                setTimeout(() => { try { adjustSessionFormForTimer(); } catch(e) {} }, 40);
 
                 // small vibration feedback if supported
                 if(navigator.vibrate) navigator.vibrate(50);
@@ -1552,6 +1597,8 @@
 
                 updateTimerDisplay();
                 timerIntervalId = setInterval(timerTick, 1000);
+                // make sure UI padding synced after phase class changes
+                setTimeout(() => { try { adjustSessionFormForTimer(); } catch(e) {} }, 40);
             }
 
             function timerTick() {
@@ -1929,6 +1976,8 @@
                 try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 try { if (typeof scrollToTopAll === 'function') scrollToTopAll(); } catch (e) { }
                 requestWakeLock();
+                // adjust session form padding if timer is visible
+                try { adjustSessionFormForTimer(); } catch (e) { }
                 pushAppState('session', { index: currentRoutineIndex });
             }
 
@@ -2042,6 +2091,7 @@
                 renderSessionCards(currentSessionExercises, null);
                 try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 requestWakeLock();
+                try { adjustSessionFormForTimer(); } catch (e) {}
                 pushAppState('session', { index: currentRoutineIndex });
                 window.closeCreateSessionModal();
             };
@@ -2747,6 +2797,7 @@
                 renderSessionCards(exercises, resumeData);
                 try { if (typeof scrollToTopOfSession === 'function') scrollToTopOfSession(); } catch (e) { }
                 requestWakeLock();
+                try { adjustSessionFormForTimer(); } catch (e) {}
             }
 
             window.startWorkout = () => {
