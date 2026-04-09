@@ -207,6 +207,11 @@
             #sessionView .badge-laterality, #sessionView .badge-type { padding:3px 6px; font-size:11px; }
         }
 
+        /* Add vertical spacing between session header actions and session form */
+        #sessionView .btn-row { margin-bottom: 14px; }
+        /* Space resume badge from inputs inside session form */
+        #resumeBadge { margin-bottom: 12px; display: block; }
+
         /* --- MODALS --- */
         .modal-overlay{position:fixed;inset:0;background:linear-gradient(rgba(2,6,23,0.45),rgba(2,6,23,0.45));backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:2200;padding:18px}
         .modal-content{width:100%;max-width:520px;background:var(--bg-container);border-radius:16px;padding:18px;border:1px solid var(--border-color);box-shadow:var(--shadow-soft)}
