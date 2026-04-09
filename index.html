@@ -30,7 +30,6 @@
             --timer-rest: #ff6b6b;
             --timer-prep: #ffd166;
         }
-
         body.dark-mode{
             --bg-body: #06070a;
             --bg-container: #0b1220;
@@ -591,6 +590,11 @@
                  </div>
                  <div style="font-size:0.8em; color:gray; margin-top:5px;" id="timerConfigSummary">
                      Prep: 10s | Work: 40s | Rest: 20s
+                 </div>
+                 <div style="display:flex; gap:8px; margin-top:10px;">
+                     <button class="btn-outline" style="width:auto;" onclick="window.exportData()">Exportar Datos</button>
+                     <button class="btn-outline" style="width:auto;" onclick="window.triggerImportFile()">Importar Datos</button>
+                     <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
                  </div>
             </div>
 
@@ -3589,6 +3593,68 @@
                 };
                 btnGoogle.addEventListener('click', startLogin);
                 btnGoogle.addEventListener('pointerdown', (e) => console.log('pointerdown google', e.type));
+            }
+
+            // --- EXPORT / IMPORT DATA ---
+            window.exportData = () => {
+                try {
+                    const uid = currentUserUID || 'guest';
+                    const key = LOCAL_KEY || `gym_tracker_${uid}`;
+                    const stored = localStorage.getItem(key) || '{}';
+                    const payload = {
+                        exportedAt: new Date().toISOString(),
+                        user: uid,
+                        data: JSON.parse(stored)
+                    };
+                    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `gymtracker_export_${uid}_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                } catch (e) { alert('Error exportando datos: ' + (e && e.message ? e.message : e)); console.error(e); }
+            }
+
+            window.triggerImportFile = () => {
+                const inp = document.getElementById('importFileInput');
+                if (!inp) return alert('Input de import no disponible');
+                inp.value = null;
+                inp.click();
+            }
+
+            window.handleImportFile = (ev) => {
+                const f = ev.target.files && ev.target.files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const obj = JSON.parse(e.target.result);
+                        if (!obj || !obj.data) {
+                            if (confirm('Archivo no tiene la estructura esperada. Intentar aplicar como bloque global de datos?')) applyImportedData(obj);
+                            else return alert('Archivo inválido');
+                        } else {
+                            if (!confirm('Importar datos reemplazará los datos locales actuales. ¿Continuar?')) return;
+                            applyImportedData(obj.data);
+                        }
+                    } catch (err) { alert('Error leyendo archivo: ' + (err && err.message ? err.message : err)); console.error(err); }
+                };
+                reader.readAsText(f);
+            }
+
+            function applyImportedData(data) {
+                try {
+                    if (!data) return alert('Datos inválidos');
+                    const candidate = (data.routines || data.history) ? data : (data.data || data);
+                    const key = LOCAL_KEY || (`gym_tracker_${currentUserUID || 'guest'}`);
+                    localStorage.setItem(key, JSON.stringify(Object.assign({ lastUpdate: new Date().toISOString() }, candidate)));
+                    applyData(candidate);
+                    injectDefaultExercises();
+                    renderUI();
+                    alert('Importado correctamente. La app se ha actualizado.');
+                } catch (e) { alert('Error aplicando datos importados: ' + (e && e.message ? e.message : e)); console.error(e); }
             }
 
         </script>
