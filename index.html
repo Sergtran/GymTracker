@@ -583,20 +583,7 @@
                 </div>
             </div>
 
-            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
-                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <label style="margin:0;">⚙️ Interval Timer:</label>
-                    <button class="btn-outline" style="width:auto;" onclick="window.openTimerConfig()">Configurar</button>
-                 </div>
-                 <div style="font-size:0.8em; color:gray; margin-top:5px;" id="timerConfigSummary">
-                     Prep: 10s | Work: 40s | Rest: 20s
-                 </div>
-                 <div style="display:flex; gap:8px; margin-top:10px;">
-                     <button class="btn-outline" style="width:auto;" onclick="window.exportData()">Exportar Datos</button>
-                     <button class="btn-outline" style="width:auto;" onclick="window.triggerImportFile()">Importar Datos</button>
-                     <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
-                 </div>
-            </div>
+            <!-- Interval timer and import/export buttons moved below routines list to reduce prominence -->
 
             <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
                 <div style="display:flex; justify-content:flex-end; align-items:center;">
@@ -611,6 +598,21 @@
             
             <h3>Mis Rutinas</h3>
             <ul id="routinesList"></ul>
+
+            <div style="margin-top:18px; border-top:1px solid var(--border-color); padding-top:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <label style="margin:0;">⚙️ Interval Timer:</label>
+                    <button class="btn-outline" style="width:auto;" onclick="window.openTimerConfig()">Configurar</button>
+                </div>
+                <div style="font-size:0.8em; color:gray; margin-top:6px;" id="timerConfigSummary">
+                    Prep: 10s | Work: 40s | Rest: 20s
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <button class="btn-outline" style="width:auto;" onclick="window.exportData()">Exportar Datos</button>
+                    <button class="btn-outline" style="width:auto;" onclick="window.triggerImportFile()">Importar Datos</button>
+                    <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
+                </div>
+            </div>
 
             <div style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
                 <button class="btn-secondary" style="background-color:#555;" onclick="window.doLogout()">Cerrar Sesión 🔒</button>
