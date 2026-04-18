@@ -2019,14 +2019,13 @@
                     const li = document.createElement("li");
                     let name = routine.name;
                     let isActive = activeCycle && activeCycle.routineIndex === i;
-                    if(isActive) name += " 🔥";
                     
                     li.innerHTML = `
                         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                            <div style="font-weight:800; font-size:1.2em; color:var(--text-main); letter-spacing:0.5px; display:flex; align-items:center; gap:10px; flex:1; min-width:0; word-break:break-word;">
+                            <div style="font-weight:700; font-size:1em; color:var(--text-main); letter-spacing:0.5px; display:flex; align-items:center; gap:10px; flex:1; min-width:0; word-break:break-word;">
                                 ${name}
                             </div>
-                            ${isActive ? '<span style="background:linear-gradient(135deg, var(--color-primary), #0768a8); color:white; padding:4px 10px; border-radius:20px; font-size:0.75em; font-weight:700; white-space:nowrap;">CICLO ACTIVO</span>' : ''}
+                            ${isActive ? '<span style="background:linear-gradient(135deg, var(--color-primary), #0768a8); color:white; padding:4px 10px; border-radius:20px; font-size:0.75em; font-weight:700; white-space:nowrap;">CICLO ACTIVO</span>' : `<button class="btn-purple btn-small" style="width:auto; margin:0; padding:4px 10px; font-size:0.75em;" onclick="window.startCycle(${i})" title="Inicia un ciclo de 4 semanas">🔄 Ciclo</button>`}
                         </div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
                             <button class="btn-success btn-small" style="width:100%; margin:0;" onclick="window.setupSession(${i})" title="Comienza tu entrenamiento">
@@ -2036,12 +2035,11 @@
                                 📋 Detalles
                             </button>
                         </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
-                            ${!activeCycle ? `<button class="btn-purple btn-small" style="width:100%; margin:0; font-size:0.85em;" onclick="window.startCycle(${i})" title="Inicia un ciclo de 4 semanas">🔄 Ciclo</button>` : '<div></div>'}
-                            <button class="btn-warning btn-small" style="width:100%; margin:0; font-size:0.85em; color:#333;" onclick="window.showEditor(${i})" title="Edita esta rutina">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                            <button class="btn-warning btn-small" style="width:100%; margin:0; color:#333;" onclick="window.showEditor(${i})" title="Edita esta rutina">
                                 ✏️ Editar
                             </button>
-                            <button class="btn-danger btn-small" style="width:100%; margin:0; font-size:0.85em;" onclick="window.deleteRoutine(${i})" title="Elimina esta rutina">
+                            <button class="btn-danger btn-small" style="width:100%; margin:0;" onclick="window.deleteRoutine(${i})" title="Elimina esta rutina">
                                 🗑️ Borrar
                             </button>
                         </div>
