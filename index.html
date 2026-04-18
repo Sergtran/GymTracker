@@ -192,12 +192,9 @@
             flex-wrap: wrap;
         }
 
-        .cycle-panel,.prev-cycle-panel{border-radius:18px;padding:18px;color:white;margin-bottom:16px;border:none}
-        .cycle-panel{background:linear-gradient(135deg,var(--color-primary),#0768a8);box-shadow:0 10px 32px rgba(14,165,233,0.2)}
-        .prev-cycle-panel{background:linear-gradient(135deg,#7c8a96,#556370);box-shadow:0 8px 24px rgba(85,99,112,0.15)}
+        .cycle-panel{border-radius:18px;padding:18px;color:white;margin-bottom:16px;border:none;background:linear-gradient(135deg,var(--color-primary),#0768a8);box-shadow:0 10px 32px rgba(14,165,233,0.2)}
         /* Use solid colors in dark mode to avoid gradients */
         body.dark-mode .cycle-panel { background: linear-gradient(135deg, #1a4d7a, #0f3450); box-shadow: 0 8px 20px rgba(26,77,122,0.4); }
-        body.dark-mode .prev-cycle-panel { background: linear-gradient(135deg, #2a3d50, #1f2d3a); box-shadow: 0 8px 20px rgba(42,61,80,0.4); }
         
         /* Improve vertical spacing inside the active cycle panel */
         #activeCyclePanel > * { margin: 8px 0; padding: 0; }
@@ -771,12 +768,12 @@
                     <button class="btn-warning" style="color:#333; margin:0;" id="btnAdvanceWeek">Semana +</button>
                     <button class="btn-danger" style="margin:0;" id="btnStopCycle">Fin ✋</button>
                 </div>
-            </div>
-
-            <div id="prevCyclePanel" class="prev-cycle-panel hidden">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>🏆 <b>Previo:</b> <span id="lblPrevRoutineName"></span></span>
-                    <span style="font-weight:600;"><span id="lblPrevWeeks"></span> sems ✓</span>
+                <!-- Previous Cycle Info (only shows if exists) -->
+                <div id="prevCycleInfo" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; opacity:0.95;">
+                        <span>🏆 <b>Anterior:</b> <span id="lblPrevRoutineName"></span></span>
+                        <span style="font-weight:600;"><span id="lblPrevWeeks"></span> semanas ✓</span>
+                    </div>
                 </div>
             </div>
 
@@ -1885,12 +1882,16 @@
             }
 
             function renderPrevCyclePanel() {
-                const panel = document.getElementById("prevCyclePanel");
+                // Now integrated into activeCyclePanel as prevCycleInfo section
+                const infoDivEl = document.getElementById("prevCycleInfo");
+                if (!infoDivEl) return; // Element might not exist
+                
                 if (!previousCycle) {
-                    panel.classList.add("hidden");
+                    infoDivEl.style.display = "none";
                     return;
                 }
-                panel.classList.remove("hidden");
+                
+                infoDivEl.style.display = "block";
                 document.getElementById("lblPrevRoutineName").innerText = previousCycle.routineName;
                 document.getElementById("lblPrevWeeks").innerText = previousCycle.weeks;
             }
