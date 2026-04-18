@@ -65,8 +65,8 @@
             width:100%; max-width:760px; background:linear-gradient(180deg,var(--bg-container),var(--surface-2)); border-radius:18px; padding:22px 20px 28px; box-shadow:var(--shadow-soft); position:relative; margin-top:10px; overflow:hidden;
         }
 
-        h2{font-size:1.25rem;margin:6px 0 14px;text-align:center;color:var(--text-main);}
-        h3,h4{margin:0 0 8px;color:var(--text-main);}
+        h2{font-size:1.4rem;margin:8px 0 20px;text-align:center;color:var(--text-main);font-weight:800;letter-spacing:-0.5px}
+        h3,h4{margin:0 0 12px;color:var(--text-main);font-weight:700}
 
         .hidden{display:none!important}
 
@@ -78,26 +78,32 @@
         /* --- BUTTONS (unified) --- */
         button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 14px;border:none;background:var(--color-primary);color:white;font-weight:600;font-size:15px;cursor:pointer;box-shadow:0 6px 18px rgba(14,165,233,0.08);transition:transform .12s ease, box-shadow .12s ease, opacity .12s;min-height:44px}
         button:active{transform:translateY(1px) scale(.995)}
+        button:hover { box-shadow: 0 8px 24px rgba(14,165,233,0.15); transform: translateY(-2px); }
         .btn-small{min-height:36px;padding:8px 10px;border-radius:10px;font-size:14px}
         .btn-primary{background:var(--color-primary)}
         .btn-success{background:var(--success)}
         .btn-danger{background:var(--danger)}
         .btn-warning{background:var(--accent);color:#0b1220}
         .btn-info{background:#6dd3ff;color:#05202b}
-        .btn-outline{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--muted);padding:8px 10px}
+        .btn-outline{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--muted);padding:8px 10px;transition:all 0.3s ease}
+        .btn-outline:hover{background:rgba(14,165,233,0.08);border-color:var(--color-primary);color:var(--color-primary)}
         .btn-google{background:#1a73e8}
 
         /* Additional button variants to improve contrast */
-        .btn-dark{background:#2b3440;color:white;box-shadow:none}
+        .btn-dark{background:#2b3440;color:white;box-shadow:none;transition:all 0.3s ease}
+        .btn-dark:hover{background:#374557;box-shadow:0 6px 16px rgba(0,0,0,0.1)}
         .btn-dark.btn-small{background:#2b3440;color:white;padding:8px 10px}
 
-        .btn-purple{background:#7c3aed;color:white}
+        .btn-purple{background:#7c3aed;color:white;transition:all 0.3s ease}
+        .btn-purple:hover{background:#8e5cf6;box-shadow:0 8px 24px rgba(124,58,237,0.15)}
         /* Make btn-purple more distinct from btn-dark and primary */
         .btn-purple.btn-small{background:#6d28d9;color:white}
 
         /* Dark mode adjustments for these buttons */
-        body.dark-mode .btn-dark{background:#1f2937}
-        body.dark-mode .btn-purple{background:#5b21b6}
+        body.dark-mode .btn-dark{background:#1f2937;transition:all 0.3s ease}
+        body.dark-mode .btn-dark:hover{background:#2d3d4d}
+        body.dark-mode .btn-purple{background:#5b21b6;transition:all 0.3s ease}
+        body.dark-mode .btn-purple:hover{background:#7024d6}
 
         .session-util-btn{background:transparent;border:1px solid var(--border-color);padding:9px;border-radius:10px;color:var(--muted);min-height:40px}
 
@@ -118,17 +124,155 @@
             box-shadow: 0 6px 18px rgba(2,6,23,0.6);
         }
 
-        .cycle-panel,.prev-cycle-panel{border-radius:14px;padding:14px;color:white;margin-bottom:12px}
-        .cycle-panel{background:linear-gradient(135deg,var(--color-primary),#0768a8)}
-        .prev-cycle-panel{background:linear-gradient(135deg,#8a8f98,#5d6770)}
+        /* MENU VIEW CARDS - Enhanced Aesthetic */
+        .menu-card {
+            background: linear-gradient(135deg, var(--bg-container), var(--surface-2));
+            border-radius: 18px;
+            padding: 18px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(16,24,40,0.08);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .menu-card:hover {
+            box-shadow: 0 12px 32px rgba(16,24,40,0.12);
+            transform: translateY(-2px);
+        }
+        body.dark-mode .menu-card {
+            background: linear-gradient(135deg, rgba(11,18,32,0.8), rgba(15,23,36,0.8));
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* Routine Item Card */
+        #routinesList > li {
+            background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
+            border: 1px solid rgba(14,165,233,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(16,24,40,0.06);
+        }
+        #routinesList > li:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+            border-color: var(--color-primary);
+            box-shadow: 0 8px 20px rgba(14,165,233,0.12);
+            transform: translateX(4px);
+        }
+        body.dark-mode #routinesList > li {
+            background: linear-gradient(135deg, rgba(20,35,55,0.6), rgba(15,23,36,0.6));
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        body.dark-mode #routinesList > li:hover {
+            background: linear-gradient(135deg, rgba(30,45,65,0.8), rgba(20,35,55,0.8));
+            border-color: var(--color-primary);
+        }
+
+        /* Routine name styling */
+        #routinesList > li > div:first-child {
+            font-size: 1.15em;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            letter-spacing: 0.3px;
+        }
+        body.dark-mode #routinesList > li > div:first-child {
+            color: #f0f4f8;
+        }
+
+        /* Button group styling inside routines */
+        #routinesList > li > div:nth-child(2) {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #routinesList > li > div > div {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cycle-panel,.prev-cycle-panel{border-radius:18px;padding:18px;color:white;margin-bottom:16px;border:none}
+        .cycle-panel{background:linear-gradient(135deg,var(--color-primary),#0768a8);box-shadow:0 10px 32px rgba(14,165,233,0.2)}
+        .prev-cycle-panel{background:linear-gradient(135deg,#7c8a96,#556370);box-shadow:0 8px 24px rgba(85,99,112,0.15)}
         /* Use solid colors in dark mode to avoid gradients */
-        body.dark-mode .cycle-panel { background: var(--cycle-bg-dark); }
-        body.dark-mode .prev-cycle-panel { background: var(--prev-cycle-bg-dark); }
+        body.dark-mode .cycle-panel { background: linear-gradient(135deg, #1a4d7a, #0f3450); box-shadow: 0 8px 20px rgba(26,77,122,0.4); }
+        body.dark-mode .prev-cycle-panel { background: linear-gradient(135deg, #2a3d50, #1f2d3a); box-shadow: 0 8px 20px rgba(42,61,80,0.4); }
+        
         /* Improve vertical spacing inside the active cycle panel */
-        #activeCyclePanel > * { margin: 6px 0; padding: 6px 0; }
+        #activeCyclePanel > * { margin: 8px 0; padding: 0; }
+        #activeCyclePanel > div:first-child { margin-top: 0; margin-bottom: 12px; }
+        #activeCyclePanel .progress-track { margin: 12px 0; height: 12px; border-radius: 6px; }
+        #activeCyclePanel > div:last-child { margin-top: 14px; gap: 10px !important; }
+        #activeCyclePanel > div:last-child button { flex: 1; font-weight: 700; font-size: 0.95em; }
+
+        /* Enhanced prev cycle panel text */
+        #prevCyclePanel span {
+            font-weight: 700;
+            font-size: 1.05em;
+            letter-spacing: 0.5px;
+        }
 
         .progress-track{background:rgba(255,255,255,0.18);height:10px;border-radius:999px;overflow:hidden}
         .progress-fill{height:100%;width:0%;background:var(--accent);transition:width .45s cubic-bezier(.2,.9,.2,1)}
+
+        /* Menu Settings Section */
+        .menu-settings-section {
+            background: linear-gradient(135deg, rgba(14,165,233,0.04), rgba(16,86,167,0.04));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+        body.dark-mode .menu-settings-section {
+            background: linear-gradient(135deg, rgba(14,165,233,0.08), rgba(16,86,167,0.08));
+            border: 1px solid rgba(14,165,233,0.1);
+        }
+
+        .menu-settings-section h3 {
+            font-size: 1em;
+            margin-bottom: 14px;
+            color: var(--text-main);
+            opacity: 0.9;
+        }
+
+        .settings-config-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+        .settings-config-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        body.dark-mode .settings-config-row {
+            border-bottom-color: rgba(255,255,255,0.04);
+        }
+
+        .settings-config-row label {
+            font-weight: 600;
+            font-size: 0.95em;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .settings-config-row .config-summary {
+            font-size: 0.85em;
+            color: var(--muted);
+            font-family: 'Courier New', monospace;
+            background: rgba(0,0,0,0.02);
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        body.dark-mode .settings-config-row .config-summary {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.06);
+        }
 
         .last-stat-box,.last-performance{font-size:.92em;color:var(--text-main);background:rgba(14,165,233,0.06);padding:10px;border-radius:10px;margin:8px 0}
         .saved-note-box{background:rgba(255,236,179,0.12);padding:10px;border-radius:10px}
@@ -139,13 +283,65 @@
 
         /* Routines list: remove default bullets and add vertical spacing between items */
         #routinesList { list-style: none; padding: 0; margin: 0; }
-        #routinesList > li { margin-bottom: 12px; }
         
         #editorList { list-style: none; padding: 0; }
+
+        /* Menu Action Buttons Row */
+        .menu-action-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .menu-action-row button {
+            flex: 1;
+            min-width: 0;
+            font-weight: 700;
+            font-size: 1em;
+            letter-spacing: 0.3px;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .menu-action-row button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+        }
 
         /* Modal session exercise list: remove default list markers (::marker) */
         #modalSessionExerciseList { list-style: none; padding: 0; margin: 0; }
         #modalSessionExerciseList li::marker { content: none; }
+
+        /* Visual Divider */
+        .menu-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+            margin: 20px 0;
+            opacity: 0.5;
+        }
+
+        /* Logout Section */
+        .menu-logout-section {
+            text-align: center;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .menu-logout-section button {
+            width: 100%;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            font-weight: 700;
+            font-size: 1em;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 8px 20px rgba(239,68,68,0.15);
+        }
+        .menu-logout-section button:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            box-shadow: 0 12px 28px rgba(239,68,68,0.25);
+            transform: translateY(-2px);
+        }
+        body.dark-mode .menu-logout-section button {
+            box-shadow: 0 8px 20px rgba(239,68,68,0.1);
+        }
 
         /* --- TOGGLE SWITCH --- */
         .toggle-switch{display:inline-block}
@@ -562,69 +758,63 @@
         <div id="cloudStatus">☁️ Guardado</div>
 
         <div id="menuView">
-            <h2>Gym Tracker</h2>
+            <h2>Gym Tracker 💪</h2>
             
             <div id="activeCyclePanel" class="cycle-panel hidden">
                 <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                     <span style="font-weight:bold; font-size:1.1em;">🔥 Activo: <span id="lblActiveRoutineName"></span></span>
-                    <span>Sem <span id="lblCurrentWeek">1</span>/4</span>
+                    <span style="font-weight:600;">Semana <span id="lblCurrentWeek">1</span>/4</span>
                 </div>
                 <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn-success" style="margin:0;" id="btnTrainActive" onclick="window.trainActive()">Entrenar</button>
-                    <button class="btn-warning" style="color:#333; margin:0;" id="btnAdvanceWeek">Semana (+)</button>
-                    <button class="btn-danger" style="margin:0;" id="btnStopCycle">Fin</button>
+                    <button class="btn-success" style="margin:0;" id="btnTrainActive" onclick="window.trainActive()">Entrenar 🏋️</button>
+                    <button class="btn-warning" style="color:#333; margin:0;" id="btnAdvanceWeek">Semana +</button>
+                    <button class="btn-danger" style="margin:0;" id="btnStopCycle">Fin ✋</button>
                 </div>
             </div>
 
             <div id="prevCyclePanel" class="prev-cycle-panel hidden">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span>🏆 <b>Previo:</b> <span id="lblPrevRoutineName"></span></span>
-                    <span><span id="lblPrevWeeks"></span> sems</span>
+                    <span style="font-weight:600;"><span id="lblPrevWeeks"></span> sems ✓</span>
                 </div>
             </div>
 
-            <!-- Interval timer and import/export buttons moved below routines list to reduce prominence -->
-
-            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
-                <div style="display:flex; justify-content:flex-end; align-items:center;">
-                    <button class="btn-success" style="width:100%; margin-bottom: 0;" id="btnCreateRoutine">Crear Rutina</button>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-                <button class="btn-info" id="btnShowHistory" style="flex:1;">Estadísticas 📈</button>
-                <button class="btn-purple" id="btnShowCalendar" style="flex:1;">Calendario 📅</button>
+            <!-- Unified action row: Crear Rutina | Estadísticas | Calendario (matched sizes) -->
+            <div class="menu-action-row">
+                <button class="btn-success" id="btnCreateRoutine">Crear Rutina</button>
+                <button class="btn-info" id="btnShowHistory">Estadísticas</button>
+                <button class="btn-purple" id="btnShowCalendar">Calendario</button>
             </div>
             
-            <h3>Mis Rutinas</h3>
+            <h3 style="color: var(--color-primary); margin-top: 0;">📋 Mis Rutinas</h3>
             <ul id="routinesList"></ul>
 
-            <div style="margin-top:18px; border-top:1px solid var(--border-color); padding-top:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <label style="margin:0;">⚙️ Interval Timer</label>
-                    <button class="btn-outline" style="width:auto;" onclick="window.openTimerConfig()">Configurar</button>
+            <div class="menu-settings-section">
+                <h3>⚙️ Configuración</h3>
+                <div class="settings-config-row">
+                    <label>Interval Timer</label>
+                    <button class="btn-outline" style="width:auto; margin:0;" onclick="window.openTimerConfig()">Configurar</button>
                 </div>
-                <div style="font-size:0.8em; color:gray; margin-top:6px;" id="timerConfigSummary">
-                    Prep: 10s | Work: 40s | Rest: 20s
-                </div>
-
-                <!-- Separator between timer and import/export -->
-                <div style="height:1px; background:var(--border-color); margin:12px 0;"></div>
-
-                <!-- Import / Export row with title on the left and buttons on the right -->
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                    <div style="font-weight:600; color:var(--text-main);">📁 Datos</div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn-outline" style="width:auto;" onclick="window.exportData()">Exportar</button>
-                        <button class="btn-outline" style="width:auto;" onclick="window.triggerImportFile()">Importar</button>
-                        <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
-                    </div>
+                <div style="font-size:0.85em; color:var(--muted); margin-top:8px; padding:0 10px;" id="timerConfigSummary">
+                    Prep: 10s | Work: 40s | Rest: 20s | Sets: 5
                 </div>
             </div>
 
-            <div style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                <button class="btn-secondary" style="background-color:#555;" onclick="window.doLogout()">Cerrar Sesión 🔒</button>
+            <div class="menu-divider"></div>
+
+            <!-- Import / Export section -->
+            <div class="menu-settings-section" style="background: linear-gradient(135deg, rgba(107,114,128,0.04), rgba(107,114,128,0.04));">
+                <h3 style="margin-bottom: 14px;">📁 Datos & Respaldo</h3>
+                <div style="display:flex; gap:8px; flex-direction: column;">
+                    <button class="btn-outline" style="width:100%; margin:0;" onclick="window.exportData()">📥 Exportar Datos</button>
+                    <button class="btn-outline" style="width:100%; margin:0;" onclick="window.triggerImportFile()">📤 Importar Datos</button>
+                    <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
+                </div>
+            </div>
+
+            <div class="menu-logout-section">
+                <button id="btnLogout" onclick="window.doLogout()">Cerrar Sesión 🔐</button>
             </div>
         </div>
 
