@@ -571,6 +571,7 @@
                 </div>
                 <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
                 <div style="display: flex; gap: 10px;">
+                    <button class="btn-success" style="margin:0;" id="btnTrainActive" onclick="window.trainActive()">Entrenar</button>
                     <button class="btn-warning" style="color:#333; margin:0;" id="btnAdvanceWeek">Semana (+)</button>
                     <button class="btn-danger" style="margin:0;" id="btnStopCycle">Fin</button>
                 </div>
@@ -592,8 +593,8 @@
             </div>
 
             <div style="display:flex; gap:10px;">
-                <button class="btn-info" id="btnShowHistory">Estadísticas 📈</button>
-                <button class="btn-purple" id="btnShowCalendar">Calendario 📅</button>
+                <button class="btn-info" id="btnShowHistory" style="flex:1;">Estadísticas 📈</button>
+                <button class="btn-purple" id="btnShowCalendar" style="flex:1;">Calendario 📅</button>
             </div>
             
             <h3>Mis Rutinas</h3>
@@ -601,16 +602,24 @@
 
             <div style="margin-top:18px; border-top:1px solid var(--border-color); padding-top:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <label style="margin:0;">⚙️ Interval Timer:</label>
+                    <label style="margin:0;">⚙️ Interval Timer</label>
                     <button class="btn-outline" style="width:auto;" onclick="window.openTimerConfig()">Configurar</button>
                 </div>
                 <div style="font-size:0.8em; color:gray; margin-top:6px;" id="timerConfigSummary">
                     Prep: 10s | Work: 40s | Rest: 20s
                 </div>
-                <div style="display:flex; gap:8px; margin-top:10px;">
-                    <button class="btn-outline" style="width:auto;" onclick="window.exportData()">Exportar Datos</button>
-                    <button class="btn-outline" style="width:auto;" onclick="window.triggerImportFile()">Importar Datos</button>
-                    <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
+
+                <!-- Separator between timer and import/export -->
+                <div style="height:1px; background:var(--border-color); margin:12px 0;"></div>
+
+                <!-- Import / Export row with title on the left and buttons on the right -->
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <div style="font-weight:600; color:var(--text-main);">📁 Datos</div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn-outline" style="width:auto;" onclick="window.exportData()">Exportar</button>
+                        <button class="btn-outline" style="width:auto;" onclick="window.triggerImportFile()">Importar</button>
+                        <input id="importFileInput" type="file" accept="application/json" style="display:none" onchange="window.handleImportFile(event)">
+                    </div>
                 </div>
             </div>
 
@@ -3367,6 +3376,26 @@
                 saveData(); renderCyclePanel(); renderPrevCyclePanel(); renderRoutinesList();
             }
             window.stopActiveCycle = () => { if(confirm("¿Terminar ciclo?")) { const rName = allRoutines[activeCycle.routineIndex].name; previousCycle = { routineName: rName, weeks: activeCycle.currentWeek }; activeCycle = null; saveData(); renderCyclePanel(); renderPrevCyclePanel(); renderRoutinesList(); } }
+
+            // Start training the active cycle's routine if present
+            window.trainActive = () => {
+                // Prefer the canonical activeCycle state
+                if (activeCycle && typeof activeCycle.routineIndex === 'number') {
+                    try { setupSession(activeCycle.routineIndex); return; } catch (e) { console.error('trainActive failed', e); }
+                }
+
+                // Fallback: infer active routine from the panel text (useful if state not loaded on module scope)
+                try {
+                    const lbl = document.getElementById('lblActiveRoutineName');
+                    const name = lbl ? lbl.innerText.trim() : null;
+                    if (name) {
+                        const idx = allRoutines.findIndex(r => r.name === name);
+                        if (idx !== -1) { setupSession(idx); return; }
+                    }
+                } catch (e) { console.error('trainActive fallback failed', e); }
+
+                return alert('No hay ciclo activo para entrenar');
+            }
 
             function updateExerciseSuggestions() {
                 const datalist = document.getElementById("exerciseSuggestions");
