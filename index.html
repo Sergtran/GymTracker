@@ -152,29 +152,53 @@
             margin-bottom: 12px;
             transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             box-shadow: 0 4px 12px rgba(16,24,40,0.06);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Animated gradient background on hover */
+        #routinesList > li::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(14,165,233,0.1), rgba(124,58,237,0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        #routinesList > li:hover::before {
+            opacity: 1;
         }
         #routinesList > li:hover {
-            background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+            background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.5));
             border-color: var(--color-primary);
-            box-shadow: 0 8px 20px rgba(14,165,233,0.12);
-            transform: translateX(4px);
+            box-shadow: 0 12px 28px rgba(14,165,233,0.15);
+            transform: translateY(-4px);
         }
         body.dark-mode #routinesList > li {
-            background: linear-gradient(135deg, rgba(20,35,55,0.6), rgba(15,23,36,0.6));
-            border: 1px solid rgba(255,255,255,0.04);
+            background: linear-gradient(135deg, rgba(20,35,55,0.7), rgba(15,23,36,0.7));
+            border: 1px solid rgba(14,165,233,0.08);
         }
         body.dark-mode #routinesList > li:hover {
-            background: linear-gradient(135deg, rgba(30,45,65,0.8), rgba(20,35,55,0.8));
+            background: linear-gradient(135deg, rgba(30,45,65,0.9), rgba(20,35,55,0.9));
             border-color: var(--color-primary);
+            box-shadow: 0 12px 28px rgba(14,165,233,0.2);
         }
 
-        /* Routine name styling */
+        /* Routine name styling with icon */
         #routinesList > li > div:first-child {
-            font-size: 1.15em;
-            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2em;
+            font-weight: 800;
             color: var(--text-main);
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             letter-spacing: 0.3px;
+        }
+        #routinesList > li > div:first-child::before {
+            content: '💪';
+            font-size: 1.4em;
+            display: block;
         }
         body.dark-mode #routinesList > li > div:first-child {
             color: #f0f4f8;
@@ -190,6 +214,22 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+        }
+        /* First row: main action buttons */
+        #routinesList > li > div:nth-child(2) > div:first-child {
+            justify-content: space-between;
+        }
+        #routinesList > li > div:nth-child(2) > div:first-child button {
+            flex: 1;
+            min-width: 0;
+        }
+        /* Second row: secondary action buttons */
+        #routinesList > li > div:nth-child(2) > div:last-child {
+            justify-content: flex-start;
+        }
+        #routinesList > li > div:nth-child(2) > div:last-child button {
+            flex: 0 1 auto;
+            min-width: 80px;
         }
 
         .cycle-panel{border-radius:18px;padding:18px;color:white;margin-bottom:16px;border:none;background:linear-gradient(135deg,var(--color-primary),#0768a8);box-shadow:0 10px 32px rgba(14,165,233,0.2)}
@@ -1978,19 +2018,32 @@
                 allRoutines.forEach((routine, i) => {
                     const li = document.createElement("li");
                     let name = routine.name;
-                    if(activeCycle && activeCycle.routineIndex === i) name += " (ACTIVA 🔥)";
+                    let isActive = activeCycle && activeCycle.routineIndex === i;
+                    if(isActive) name += " 🔥";
+                    
                     li.innerHTML = `
-                        <div style="font-weight:bold;">${name}</div>
-                        <div style="display:flex; flex-direction:column; gap:5px;">
-                            <div>
-                                <button class="btn-dark btn-small" onclick="window.showRoutineDetail(${i})">Ver</button>
-                                ${!activeCycle ? `<button class="btn-purple btn-small" onclick="window.startCycle(${i})">Ciclo</button>` : ''}
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                            <div style="font-weight:800; font-size:1.2em; color:var(--text-main); letter-spacing:0.5px; display:flex; align-items:center; gap:10px; flex:1; min-width:0; word-break:break-word;">
+                                ${name}
                             </div>
-                            <div>
-                                <button class="btn-success btn-small" onclick="window.setupSession(${i})">Entrenar</button>
-                                <button class="btn-warning btn-small" onclick="window.showEditor(${i})">Editar</button>
-                                <button class="btn-danger btn-small" onclick="window.deleteRoutine(${i})">X</button>
-                            </div>
+                            ${isActive ? '<span style="background:linear-gradient(135deg, var(--color-primary), #0768a8); color:white; padding:4px 10px; border-radius:20px; font-size:0.75em; font-weight:700; white-space:nowrap;">CICLO ACTIVO</span>' : ''}
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                            <button class="btn-success btn-small" style="width:100%; margin:0;" onclick="window.setupSession(${i})" title="Comienza tu entrenamiento">
+                                🏋️ Entrenar
+                            </button>
+                            <button class="btn-info btn-small" style="width:100%; margin:0;" onclick="window.showRoutineDetail(${i})" title="Ver detalles de la rutina">
+                                📋 Detalles
+                            </button>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                            ${!activeCycle ? `<button class="btn-purple btn-small" style="width:100%; margin:0; font-size:0.85em;" onclick="window.startCycle(${i})" title="Inicia un ciclo de 4 semanas">🔄 Ciclo</button>` : '<div></div>'}
+                            <button class="btn-warning btn-small" style="width:100%; margin:0; font-size:0.85em; color:#333;" onclick="window.showEditor(${i})" title="Edita esta rutina">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn-danger btn-small" style="width:100%; margin:0; font-size:0.85em;" onclick="window.deleteRoutine(${i})" title="Elimina esta rutina">
+                                🗑️ Borrar
+                            </button>
                         </div>
                     `;
                     list.appendChild(li);
