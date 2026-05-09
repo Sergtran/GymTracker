@@ -41,39 +41,39 @@
             --timer-prep: #f4a62a;
         }
         body.dark-mode{
-            --bg-body: #071015;
-            --bg-container: #0d1c25;
-            --surface-2: #102633;
-            --text-main: #e8f1f4;
-            --muted: #9eb0b8;
-            --border-color: #1d3a47;
-            --color-primary: #55b6d1;
-            --primary-deep: #0a2735;
-            --primary-soft: #143546;
-            --accent: #e0a24a;
-            --accent-soft: #3a2b14;
-            --on-accent: #13242f;
-            --success: #27b894;
-            --success-soft: #123d36;
-            --danger: #e36b65;
-            --danger-soft: #3d1e21;
-            --info: #6bc5db;
-            --info-soft: #173241;
-            --purple: #8b73d8;
-            --purple-soft: #2d2551;
-            --glass: rgba(255,255,255,0.03);
-            --shadow-soft: 0 8px 24px rgba(2,12,18,0.62);
+            --bg-body: #07111c;
+            --bg-container: #0d1b2a;
+            --surface-2: #122338;
+            --text-main: #eef6fb;
+            --muted: #9aacba;
+            --border-color: #20364d;
+            --color-primary: #35d3c4;
+            --primary-deep: #48e0d0;
+            --primary-soft: #123a40;
+            --accent: #f6b84f;
+            --accent-soft: #3a2b16;
+            --on-accent: #ffe1a2;
+            --success: #35d3c4;
+            --success-soft: #123a40;
+            --danger: #ff7a85;
+            --danger-soft: #3d1f29;
+            --info: #7ab8ff;
+            --info-soft: #132d4a;
+            --purple: #a390ff;
+            --purple-soft: #292454;
+            --glass: rgba(255,255,255,0.04);
+            --shadow-soft: 0 18px 42px rgba(0,0,0,0.38);
             /* Solid color overrides for dark mode (avoid gradients) */
-            --cycle-bg-dark: #102633; /* solid primary-ish panel */
-            --prev-cycle-bg-dark: #172e3a; /* solid muted panel */
-            --app-container-dark: #0a1821;
-            --exercise-card-dark: #0d202b;
+            --cycle-bg-dark: #0d1b2a; /* solid primary-ish panel */
+            --prev-cycle-bg-dark: #122338; /* solid muted panel */
+            --app-container-dark: #07111c;
+            --exercise-card-dark: #0d1b2a;
             /* Timer colors: use same hues but slightly darker in dark mode */
-            --timer-bg: #0a2735; /* darker background for timer */
-            --timer-text: #e8f1f4; /* slightly off-white for contrast */
-            --timer-work: #23a882; /* slightly darker than --timer-work in light mode */
-            --timer-rest: #d95d58; /* slightly darker rest color */
-            --timer-prep: #d89a3b; /* slightly darker prep color */
+            --timer-bg: #081523; /* darker background for timer */
+            --timer-text: #eef6fb; /* slightly off-white for contrast */
+            --timer-work: #35d3c4; /* slightly darker than --timer-work in light mode */
+            --timer-rest: #ff7a85; /* slightly darker rest color */
+            --timer-prep: #f6b84f; /* slightly darker prep color */
         }
 
         /* --- LAYOUT --- */
@@ -81,6 +81,9 @@
         body{
             margin:0; padding:12px 12px 88px; background:radial-gradient(circle at 50% 0%, #ffffff 0%, var(--bg-body) 42%, #eef6f9 100%); color:var(--text-main); font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; -webkit-font-smoothing:antialiased;
             display:flex; justify-content:center; align-items:flex-start; transition:background .25s ease,color .25s ease; -webkit-user-select:none; user-select:none;
+        }
+        body.dark-mode{
+            background: radial-gradient(circle at 50% 0%, #142338 0%, #07111c 48%, #050b12 100%);
         }
 
         .app-container{
@@ -122,15 +125,21 @@
         .btn-purple.btn-small{background:linear-gradient(135deg,var(--purple),#9b86ff);color:white}
 
         /* Dark mode adjustments for these buttons */
-        body.dark-mode .btn-dark{background:#143546;transition:all 0.3s ease}
-        body.dark-mode .btn-dark:hover{background:#1b4558}
-        body.dark-mode .btn-purple{background:#735fc6;transition:all 0.3s ease}
-        body.dark-mode .btn-purple:hover{background:#8370d4}
+        body.dark-mode .btn-primary{background:var(--color-primary);color:#062327}
+        body.dark-mode .btn-success{background:var(--success-soft);border:1px solid rgba(53,211,196,0.28);color:var(--color-primary)}
+        body.dark-mode .btn-danger{background:var(--danger-soft);border:1px solid rgba(255,122,133,0.28);color:var(--danger)}
+        body.dark-mode .btn-warning{background:var(--accent-soft);border:1px solid rgba(246,184,79,0.28);color:var(--on-accent)}
+        body.dark-mode .btn-info{background:var(--info-soft);border:1px solid rgba(122,184,255,0.24);color:var(--info)}
+        body.dark-mode .btn-dark{background:#142338;transition:all 0.3s ease}
+        body.dark-mode .btn-dark:hover{background:#1a3049}
+        body.dark-mode .btn-purple{background:var(--purple-soft);border:1px solid rgba(163,144,255,0.28);color:var(--purple);transition:all 0.3s ease}
+        body.dark-mode .btn-purple:hover{background:#332c64}
 
         .session-util-btn{background:transparent;border:1px solid var(--border-color);padding:9px;border-radius:10px;color:var(--muted);min-height:40px}
 
         /* --- THEME TOGGLE --- */
         .theme-toggle{position:absolute;top:8px;right:20px;z-index:120;background:rgba(255,255,255,0.96);border:1px solid var(--border-color);width:66px;height:66px;border-radius:20px;color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 12px 28px rgba(16,24,39,0.1)}
+        body.dark-mode .theme-toggle{background:var(--bg-container);border-color:var(--border-color);color:var(--accent);box-shadow:var(--shadow-soft)}
 
         /* --- CARDS / PANELS --- */
         .exercise-card{background:linear-gradient(180deg,rgba(255,255,255,0.7),transparent);border-radius:var(--card-radius);padding:12px;border:1px solid var(--border-color);margin-bottom:12px;box-shadow:var(--shadow-soft)}
@@ -142,8 +151,8 @@
         body.dark-mode .exercise-card {
             background: var(--exercise-card-dark) !important;
             background-image: none !important;
-            border: 1px solid rgba(255,255,255,0.04);
-            box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
         }
 
         /* MENU VIEW CARDS - Enhanced Aesthetic */
@@ -161,8 +170,8 @@
             transform: translateY(-2px);
         }
         body.dark-mode .menu-card {
-            background: linear-gradient(135deg, var(--bg-container), var(--surface-2));
-            border: 1px solid rgba(255,255,255,0.06);
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
         }
 
         /* Routine Item Card */
@@ -197,13 +206,14 @@
             transform: translateY(-4px);
         }
         body.dark-mode #routinesList > li {
-            background: linear-gradient(135deg, rgba(16,38,51,0.78), rgba(13,28,37,0.82));
-            border: 1px solid rgba(85,182,209,0.12);
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
         }
         body.dark-mode #routinesList > li:hover {
-            background: linear-gradient(135deg, rgba(20,53,70,0.92), rgba(16,38,51,0.92));
+            background: var(--surface-2);
             border-color: var(--color-primary);
-            box-shadow: 0 12px 28px rgba(85,182,209,0.18);
+            box-shadow: 0 18px 42px rgba(0,0,0,0.42);
         }
 
         /* Routine name styling with icon */
@@ -280,7 +290,7 @@
 
         .cycle-panel{border-radius:22px;padding:28px 30px;color:var(--text-main);margin-bottom:22px;border:1px solid var(--border-color);background:rgba(255,255,255,0.95);box-shadow:var(--shadow-soft)}
         /* Use solid colors in dark mode to avoid gradients */
-        body.dark-mode .cycle-panel { background: linear-gradient(135deg, #174b60, #0a2735); box-shadow: 0 8px 20px rgba(10,39,53,0.45); }
+        body.dark-mode .cycle-panel { background: var(--bg-container); border-color: var(--border-color); box-shadow: var(--shadow-soft); }
         
         /* Improve vertical spacing inside the active cycle panel */
         #activeCyclePanel > * { margin: 0; padding: 0; }
@@ -297,6 +307,9 @@
         #activeCyclePanel .btn-success{background:linear-gradient(135deg,var(--success-soft),#d4fbf4);border:1px solid rgba(18,167,157,0.18);color:var(--primary-deep)}
         #activeCyclePanel .btn-warning{background:linear-gradient(135deg,var(--info-soft),#edf6ff);border:1px solid rgba(76,146,232,0.12);color:#1d65a6}
         #activeCyclePanel .btn-danger{background:linear-gradient(135deg,var(--danger-soft),#fff0f2);border:1px solid rgba(239,63,76,0.14);color:var(--danger)}
+        body.dark-mode #activeCyclePanel .btn-success{background:var(--success-soft);border-color:rgba(53,211,196,0.3);color:var(--color-primary)}
+        body.dark-mode #activeCyclePanel .btn-warning{background:var(--info-soft);border-color:rgba(122,184,255,0.26);color:var(--info)!important}
+        body.dark-mode #activeCyclePanel .btn-danger{background:var(--danger-soft);border-color:rgba(255,122,133,0.3);color:var(--danger)}
         #lblActiveRoutineName,#lblCurrentWeek{color:var(--color-primary)}
 
         /* Enhanced prev cycle panel text */
@@ -321,8 +334,8 @@
             transition: all 0.3s ease;
         }
         body.dark-mode .menu-settings-section {
-            background: linear-gradient(135deg, rgba(85,182,209,0.08), rgba(39,184,148,0.06));
-            border: 1px solid rgba(85,182,209,0.12);
+            background: var(--bg-container);
+            border: 1px solid var(--border-color);
         }
 
         .menu-settings-section h3 {
@@ -371,10 +384,14 @@
 
         .last-stat-box,.last-performance{font-size:.92em;color:var(--text-main);background:rgba(29,111,143,0.07);padding:10px;border-radius:10px;margin:8px 0}
         .saved-note-box{background:rgba(230,162,58,0.14);padding:10px;border-radius:10px}
+        body.dark-mode .last-stat-box,body.dark-mode .last-performance{background:var(--surface-2);border:1px solid var(--border-color)}
+        body.dark-mode .saved-note-box{background:var(--accent-soft);color:var(--on-accent)}
 
         .badge-pr{background:linear-gradient(90deg,#edc86b,var(--accent));color:#2d2414;padding:4px 8px;border-radius:999px;font-weight:700}
         .badge-laterality{background:rgba(29,111,143,0.09);padding:4px 8px;border-radius:8px;color:var(--muted);font-size:12px}
         .badge-type{background:transparent;border:1px solid var(--border-color);padding:4px 8px;border-radius:8px;font-size:12px;color:var(--muted)}
+        body.dark-mode .badge-pr{background:var(--accent-soft);color:var(--on-accent)}
+        body.dark-mode .badge-laterality{background:var(--primary-soft);color:var(--color-primary)}
 
         /* Routines list: remove default bullets and add vertical spacing between items */
         #routinesList { list-style: none; padding: 0; margin: 0; }
@@ -410,6 +427,11 @@
         .menu-action-row button:nth-child(1){color:var(--primary-deep)}
         .menu-action-row button:nth-child(2){color:#1d65a6}
         .menu-action-row button:nth-child(3){color:var(--purple)}
+        body.dark-mode .menu-action-row button{background:var(--bg-container);border-color:var(--border-color);box-shadow:var(--shadow-soft)}
+        body.dark-mode .menu-action-row button:nth-child(1){color:var(--color-primary)}
+        body.dark-mode .menu-action-row button:nth-child(2){color:var(--info)}
+        body.dark-mode .menu-action-row button:nth-child(3){color:var(--purple)}
+        body.dark-mode .menu-action-row button:hover{background:var(--surface-2);box-shadow:0 18px 42px rgba(0,0,0,0.42)}
         .menu-action-row button:hover {
             transform: translateY(-3px);
             box-shadow: 0 16px 34px rgba(16,24,39,0.12);
