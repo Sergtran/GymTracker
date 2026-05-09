@@ -14,6 +14,11 @@
             --bg-body: #f6fafc;
             --bg-container: #ffffff;
             --surface-2: #f8fbfd;
+            --bg-card: #ffffff;
+            --bg-header: #edf6ff;
+            --bg-note: #fff3d7;
+            --text-note: #8a5200;
+            --text-header: #0d8f87;
             --text-main: #101827;
             --muted: #667085;
             --border-color: #e3edf2;
@@ -44,6 +49,11 @@
             --bg-body: #07111c;
             --bg-container: #0d1b2a;
             --surface-2: #122338;
+            --bg-card: #0d1b2a;
+            --bg-header: #122338;
+            --bg-note: #3a2b16;
+            --text-note: #ffe1a2;
+            --text-header: #35d3c4;
             --text-main: #eef6fb;
             --muted: #9aacba;
             --border-color: #20364d;
@@ -112,6 +122,8 @@
         .btn-info{background:linear-gradient(135deg,var(--info-soft),#e6f3ff);color:#16466a}
         .btn-outline{background:transparent;border:1px solid rgba(0,0,0,0.06);color:var(--muted);padding:8px 10px;transition:all 0.3s ease}
         .btn-outline:hover{background:rgba(29,111,143,0.09);border-color:var(--color-primary);color:var(--color-primary)}
+        .btn-secondary{background:var(--surface-2);border:1px solid var(--border-color);color:var(--muted);box-shadow:none}
+        .btn-secondary:hover{background:var(--primary-soft);color:var(--color-primary);box-shadow:0 10px 22px rgba(16,24,39,0.08)}
         .btn-google{background:#1a73e8}
 
         /* Additional button variants to improve contrast */
@@ -130,12 +142,22 @@
         body.dark-mode .btn-danger{background:var(--danger-soft);border:1px solid rgba(255,122,133,0.28);color:var(--danger)}
         body.dark-mode .btn-warning{background:var(--accent-soft);border:1px solid rgba(246,184,79,0.28);color:var(--on-accent)}
         body.dark-mode .btn-info{background:var(--info-soft);border:1px solid rgba(122,184,255,0.24);color:var(--info)}
+        body.dark-mode .btn-outline{border-color:var(--border-color);color:var(--muted)}
+        body.dark-mode .btn-outline:hover{background:var(--surface-2);color:var(--color-primary)}
+        body.dark-mode .btn-secondary{background:var(--surface-2);border-color:var(--border-color);color:var(--muted)}
+        body.dark-mode .btn-secondary:hover{background:var(--primary-soft);color:var(--color-primary)}
         body.dark-mode .btn-dark{background:#142338;transition:all 0.3s ease}
         body.dark-mode .btn-dark:hover{background:#1a3049}
         body.dark-mode .btn-purple{background:var(--purple-soft);border:1px solid rgba(163,144,255,0.28);color:var(--purple);transition:all 0.3s ease}
         body.dark-mode .btn-purple:hover{background:#332c64}
 
         .session-util-btn{background:transparent;border:1px solid var(--border-color);padding:9px;border-radius:10px;color:var(--muted);min-height:40px}
+        .btn-row{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+        .dropdown-container,.mini-chart-box{background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:10px;margin-top:8px}
+        .day-header{color:var(--color-primary);font-weight:900;margin:16px 0 10px}
+        .timer-config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .timer-config-item{background:var(--surface-2);border:1px solid var(--border-color);border-radius:12px;padding:10px}
+        .timer-config-item label{display:block;margin-bottom:6px;color:var(--muted);font-size:.85rem;font-weight:700}
 
         /* --- THEME TOGGLE --- */
         .theme-toggle{position:absolute;top:8px;right:20px;z-index:120;background:rgba(255,255,255,0.96);border:1px solid var(--border-color);width:66px;height:66px;border-radius:20px;color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 12px 28px rgba(16,24,39,0.1)}
@@ -337,6 +359,7 @@
             background: var(--bg-container);
             border: 1px solid var(--border-color);
         }
+        body.dark-mode .menu-settings-section[style]{background:var(--bg-container)!important}
 
         .menu-settings-section h3 {
             font-size: 1em;
@@ -497,6 +520,8 @@
         .cal-day.today{box-shadow:0 4px 14px rgba(29,111,143,0.14);border-color:var(--color-primary)}
         .cal-day.has-workout{background:linear-gradient(180deg,#e9f8f3,#f3fbf8);color:var(--success);font-weight:700}
         .cal-day.selected{outline:3px solid rgba(29,111,143,0.14);transform:scale(1.03)}
+        body.dark-mode .cal-day.has-workout{background:var(--success-soft);color:var(--color-primary);border-color:rgba(53,211,196,0.28)}
+        body.dark-mode .cal-day.selected{outline-color:rgba(53,211,196,0.22)}
 
         /* Center calendar action buttons and add spacing */
         .cal-actions { display: flex; gap: 8px; justify-content: center; align-items: center; padding: 8px 0; }
@@ -893,7 +918,7 @@
                 <span style="background:white; border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; color:black; font-weight:bold;">G</span>
                 Entrar con Google
             </button>
-            <p style="font-size:0.8em; margin-top:15px; color:#666;">Tus datos se guardarán de forma segura en tu cuenta.</p>
+            <p style="font-size:0.8em; margin-top:15px; color:var(--muted);">Tus datos se guardarán de forma segura en tu cuenta.</p>
         </div>
     </div>
 
@@ -1041,7 +1066,7 @@
             <div class="menu-divider"></div>
 
             <!-- Import / Export section -->
-            <div class="menu-settings-section" style="background: linear-gradient(135deg, rgba(107,114,128,0.04), rgba(107,114,128,0.04));">
+            <div class="menu-settings-section">
                 <h3 style="margin-bottom: 14px;">📁 Datos & Respaldo</h3>
                 <div style="display:flex; gap:8px; flex-direction: column;">
                     <button class="btn-outline" style="width:100%; margin:0;" onclick="window.exportData()">📥 Exportar Datos</button>
@@ -1477,8 +1502,8 @@
                 const el = document.getElementById("cloudStatus");
                 el.innerText = msg;
                 el.style.opacity = "1";
-                el.style.backgroundColor = isError ? "#f8d7da" : "var(--bg-container)";
-                el.style.color = isError ? "#8f2f2b" : "var(--success)";
+                el.style.backgroundColor = isError ? "var(--danger-soft)" : "var(--bg-container)";
+                el.style.color = isError ? "var(--danger)" : "var(--success)";
                 if(!isError) setTimeout(() => { el.style.opacity = "0"; }, 3000); 
             }
 
@@ -2700,7 +2725,7 @@
                         </div>
                     `;
                 } else {
-                    html += `<div class="last-performance" style="background:var(--bg-header); border-left:4px solid #999; color:var(--text-main);">Sin datos.</div>`;
+                    html += `<div class="last-performance" style="background:var(--bg-header); border-left:4px solid var(--muted); color:var(--text-main);">Sin datos.</div>`;
                 }
                 div.innerHTML = html;
                 return div;
@@ -2725,8 +2750,11 @@
                 if(context === 'main' && mainChartInstance) mainChartInstance.destroy();
 
                 const isDark = document.body.classList.contains("dark-mode");
-                const gridColor = isDark ? '#444' : '#ddd';
-                const textColor = isDark ? '#aaa' : '#666';
+                const styles = getComputedStyle(document.body);
+                const gridColor = styles.getPropertyValue('--border-color').trim();
+                const textColor = styles.getPropertyValue('--muted').trim();
+                const primaryChartColor = styles.getPropertyValue('--color-primary').trim();
+                const successChartColor = styles.getPropertyValue('--success').trim();
 
                 const lateralityMode = document.getElementById('chartLateralitySelector') ? document.getElementById('chartLateralitySelector').value : 'both';
                 const labels = [];
@@ -2779,10 +2807,10 @@
 
                 const datasets = [];
                 if(lateralityMode === 'both' || lateralityMode === 'bilateral') {
-                    datasets.push({ label: labelText + ' - Bilateral', data: bilateralData, borderColor: '#1d6f8f', backgroundColor: 'rgba(29,111,143,0.09)', spanGaps: true, borderWidth: 2, pointRadius: 3, tension: 0.1 });
+                    datasets.push({ label: labelText + ' - Bilateral', data: bilateralData, borderColor: primaryChartColor, backgroundColor: 'rgba(18,167,157,0.10)', spanGaps: true, borderWidth: 2, pointRadius: 3, tension: 0.1 });
                 }
                 if(lateralityMode === 'both' || lateralityMode === 'unilateral') {
-                    datasets.push({ label: labelText + ' - Unilateral', data: unilateralData, borderColor: '#18a886', backgroundColor: 'rgba(24,168,134,0.09)', spanGaps: true, borderWidth: 2, pointRadius: 3, tension: 0.1 });
+                    datasets.push({ label: labelText + ' - Unilateral', data: unilateralData, borderColor: successChartColor, backgroundColor: 'rgba(53,211,196,0.10)', spanGaps: true, borderWidth: 2, pointRadius: 3, tension: 0.1 });
                 }
 
                 const chartObj = new Chart(ctx, {
@@ -3411,7 +3439,7 @@
 
                     let noteHTML = "";
                     if (exerciseNotes[name]) {
-                        noteHTML = `<div id="saved_note_${i}" class="saved-note-box"><div><strong>📝 Nota:</strong> <span id="note_text_${i}">${exerciseNotes[name].text}</span></div><div style="display:flex; gap:5px;"><button class="btn-outline" onclick="window.editNote(${i})">✏️</button><button class="btn-outline" style="color:red; border-color:red;" onclick="window.deleteNote('${name}', ${i})">🗑️</button></div></div>`;
+                        noteHTML = `<div id="saved_note_${i}" class="saved-note-box"><div><strong>📝 Nota:</strong> <span id="note_text_${i}">${exerciseNotes[name].text}</span></div><div style="display:flex; gap:5px;"><button class="btn-outline" onclick="window.editNote(${i})">✏️</button><button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="window.deleteNote('${name}', ${i})">🗑️</button></div></div>`;
                     }
 
                     // lateralityToShow was computed earlier; create badge
