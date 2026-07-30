@@ -67,3 +67,29 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+*.vsidx
+
+# ============================
+# Visual Studio
+# ============================
+
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ============================
+# .NET Build
+# ============================
+
+bin/
+obj/
+
+# Rider / VS Code (opcional)
+.idea/
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
