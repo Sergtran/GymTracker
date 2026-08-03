@@ -1,12 +1,10 @@
-namespace GymTracker.Domain.Enums
+namespace GymTracker.Domain.Enums;
+
+/// <summary>
+/// Tema visual del usuario (index.html: gymTheme en localStorage; V2 lo persiste en UserSettings).
+/// </summary>
+public enum Theme
 {
-	internal enum Theme
-	{
-		General = 0,
-		Strength = 1,
-		Hypertrophy = 2,
-		Endurance = 3,
-		Mobility = 4,
-		Conditioning = 5
-	}
+	Light = 0,
+	Dark = 1
 }

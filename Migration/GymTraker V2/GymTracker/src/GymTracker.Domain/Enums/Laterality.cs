@@ -1,11 +1,10 @@
-namespace GymTracker.Domain.Enums
+namespace GymTracker.Domain.Enums;
+
+/// <summary>
+/// Lateralidad del ejercicio (index.html: bilateral / unilateral).
+/// </summary>
+public enum Laterality
 {
-	internal enum Laterality
-	{
-		Unknown = 0,
-		Bilateral = 1,
-		Unilateral = 2,
-		Left = 3,
-		Right = 4
-	}
+	Bilateral = 0,
+	Unilateral = 1
 }

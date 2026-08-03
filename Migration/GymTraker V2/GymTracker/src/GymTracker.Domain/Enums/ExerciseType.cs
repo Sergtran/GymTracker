@@ -1,13 +1,12 @@
-namespace GymTracker.Domain.Enums
+namespace GymTracker.Domain.Enums;
+
+/// <summary>
+/// Tipo de ejercicio, tal como lo maneja la app (index.html: standard, bw, weighted, time).
+/// </summary>
+public enum ExerciseType
 {
-	internal enum ExerciseType
-	{
-		Unknown = 0,
-		Strength = 1,
-		Cardio = 2,
-		Mobility = 3,
-		Flexibility = 4,
-		Power = 5,
-		Accessory = 6
-	}
+	Standard = 0,
+	Bodyweight = 1,
+	Weighted = 2,
+	Time = 3
 }

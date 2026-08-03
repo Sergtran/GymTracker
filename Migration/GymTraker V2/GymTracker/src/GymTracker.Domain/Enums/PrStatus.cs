@@ -1,10 +1,11 @@
-namespace GymTracker.Domain.Enums
+namespace GymTracker.Domain.Enums;
+
+/// <summary>
+/// Estado de récord personal (PR) de un ejercicio al guardar un entrenamiento.
+/// La ausencia de PR se representa con <see langword="null"/> (nullable PrStatus).
+/// </summary>
+public enum PrStatus
 {
-	internal enum PrStatus
-	{
-		None = 0,
-		New = 1,
-		Equal = 2,
-		Improved = 3
-	}
+	New = 0,
+	Matched = 1
 }
