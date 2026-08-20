@@ -93,3 +93,5 @@ obj/
 # NuGet
 *.nupkg
 packages/
+
+appsettings.Development.json
