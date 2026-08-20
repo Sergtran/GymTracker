@@ -125,9 +125,9 @@ public sealed class GymTrackerDbContext : IdentityDbContext<ApplicationUser>
 			e.Property(s => s.Weight)
 			 .HasConversion(w => w.Value, v => new Weight(v));
 
-			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_SetNumber_Positive", "SetNumber > 0"));
-			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_Reps_NonNegative", "Reps >= 0"));
-			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_Weight_NonNegative", "Weight >= 0"));
+			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_SetNumber_Positive", "\"SetNumber\" > 0"));
+			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_Reps_NonNegative", "\"Reps\" >= 0"));
+			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_Weight_NonNegative", "\"Weight\" >= 0"));
 		});
 
 		// TrainingCycle
