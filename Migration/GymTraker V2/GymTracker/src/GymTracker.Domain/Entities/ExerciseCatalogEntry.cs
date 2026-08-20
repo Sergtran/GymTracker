@@ -1,3 +1,4 @@
+using GymTracker.Domain.Common;
 using GymTracker.Domain.Enums;
 using GymTracker.Domain.ValueObjects;
 
@@ -7,10 +8,10 @@ namespace GymTracker.Domain.Entities;
 /// Ejercicio del catálogo global (seed a partir de DEFAULT_EXERCISES de index.html).
 /// Sin UserId: es compartido por todos los usuarios. El nombre es UNIQUE en BD.
 /// Las preferencias individuales se guardan en <see cref="UserExercisePreference"/>.
-/// El Id es int (identidad de BD) porque es dato de referencia, no un agregado del dominio
-/// (los agregados siguen usando Guid). Los IDs del seed son deterministas (1..111) para HasData.
+/// Igual que los demás agregados, usa Guid; los IDs del seed son GUIDs deterministas
+/// (uuid5 sobre el nombre, generados una sola vez) para que HasData sea estable.
 /// </summary>
-public sealed class ExerciseCatalogEntry
+public sealed class ExerciseCatalogEntry : Entity
 {
 	public const int MaxNameLength = 150;
 
@@ -19,7 +20,7 @@ public sealed class ExerciseCatalogEntry
 		// Requerido por EF Core
 	}
 
-	public ExerciseCatalogEntry(int id, Name name, ExerciseType exerciseType, Laterality defaultLaterality)
+	public ExerciseCatalogEntry(Guid id, Name name, ExerciseType exerciseType, Laterality defaultLaterality)
 	{
 		ArgumentNullException.ThrowIfNull(name);
 		if (name.Value.Length > MaxNameLength)
@@ -32,11 +33,9 @@ public sealed class ExerciseCatalogEntry
 	}
 
 	public ExerciseCatalogEntry(Name name, ExerciseType exerciseType, Laterality defaultLaterality)
-		: this(0, name, exerciseType, defaultLaterality)
+		: this(Guid.NewGuid(), name, exerciseType, defaultLaterality)
 	{
 	}
-
-	public int Id { get; private set; }
 
 	public Name Name { get; private set; } = null!;
 
