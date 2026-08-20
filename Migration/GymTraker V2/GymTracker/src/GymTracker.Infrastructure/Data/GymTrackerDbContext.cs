@@ -162,19 +162,8 @@ public sealed class GymTrackerDbContext : IdentityDbContext<ApplicationUser>
 			 .OnDelete(DeleteBehavior.Cascade);
 		});
 
-		// ExerciseCatalogEntry
-		modelBuilder.Entity<ExerciseCatalogEntry>(e =>
-		{
-			e.Property(x => x.Name)
-			 .HasConversion(name => name.Value, value => new Name(value))
-			 .HasMaxLength(ExerciseCatalogEntry.MaxNameLength)
-			 .IsRequired();
-
-			e.Property(x => x.ExerciseType).HasConversion<string>();
-			e.Property(x => x.DefaultLaterality).HasConversion<string>();
-
-			e.HasIndex(x => x.Name).IsUnique();
-		});
+		// ExerciseCatalogEntry (configuración + seed HasData en clase separada)
+		modelBuilder.ApplyConfiguration(new ExerciseCatalogConfiguration());
 
 		// ExerciseNote
 		modelBuilder.Entity<ExerciseNote>(e =>
