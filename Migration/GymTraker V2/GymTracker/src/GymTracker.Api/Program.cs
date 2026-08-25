@@ -1,7 +1,10 @@
 using GymTracker.Infrastructure.Data;
 using GymTracker.Infrastructure.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,9 +19,32 @@ builder.Services.AddDbContext<GymTrackerDbContext>(options =>
 	options.UseNpgsql(
 		builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+	options.Password.RequireNonAlphanumeric = true;
+	options.User.RequireUniqueEmail = true;
+})
+	.AddRoles<IdentityRole>()
 	.AddEntityFrameworkStores<GymTrackerDbContext>()
+	.AddSignInManager()
 	.AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+	.AddJwtBearer(options =>
+	{
+		options.TokenValidationParameters = new TokenValidationParameters
+		{
+			ValidateIssuer = true,
+			ValidIssuer = builder.Configuration["Jwt:Issuer"],
+			ValidateAudience = true,
+			ValidAudience = builder.Configuration["Jwt:Audience"],
+			ValidateIssuerSigningKey = true,
+			IssuerSigningKey = new SymmetricSecurityKey(
+				Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+			ValidateLifetime = true,
+			ClockSkew = TimeSpan.FromMinutes(1)
+		};
+	});
 
 var app = builder.Build();
 
