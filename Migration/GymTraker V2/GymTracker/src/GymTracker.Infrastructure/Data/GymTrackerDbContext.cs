@@ -41,7 +41,10 @@ public sealed class GymTrackerDbContext : IdentityDbContext<ApplicationUser>
 			 .HasForeignKey(r => r.UserId)
 			 .OnDelete(DeleteBehavior.Cascade);
 
-			e.HasMany(r => r.Sessions).WithOne().HasForeignKey(s => s.RoutineId).OnDelete(DeleteBehavior.Cascade);
+			e.HasMany(r => r.Sessions)
+			 .WithOne()
+			 .HasForeignKey(s => s.RoutineId)
+			 .OnDelete(DeleteBehavior.Cascade);
 		});
 
 		// WorkoutSession
