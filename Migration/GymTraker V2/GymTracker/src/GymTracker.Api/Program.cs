@@ -1,3 +1,4 @@
+using GymTracker.Infrastructure;
 using GymTracker.Infrastructure.Data;
 using GymTracker.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -44,6 +45,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			ClockSkew = TimeSpan.FromMinutes(1)
 		};
 	});
+
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
