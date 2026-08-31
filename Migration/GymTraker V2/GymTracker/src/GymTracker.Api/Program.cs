@@ -24,7 +24,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 	options.Password.RequireNonAlphanumeric = true;
 	options.User.RequireUniqueEmail = true;
 })
-	.AddRoles<IdentityRole>()
 	.AddEntityFrameworkStores<GymTrackerDbContext>()
 	.AddSignInManager()
 	.AddDefaultTokenProviders();
@@ -56,9 +55,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
