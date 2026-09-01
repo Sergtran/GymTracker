@@ -1,3 +1,4 @@
+using GymTracker.Api.Middleware;
 using GymTracker.Application;
 using GymTracker.Infrastructure;
 using GymTracker.Infrastructure.Data;
@@ -79,7 +80,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
