@@ -15,7 +15,7 @@ public sealed class EfRoutineRepository : IRoutineRepository
 
 	public async Task<Routine?> GetByIdAsync(string userId, Guid id, CancellationToken ct = default)
 		=> await _db.Routines
-			.AsNoTracking()
+			.AsTracking()
 			.FirstOrDefaultAsync(r => r.UserId == userId && r.Id == id, ct);
 
 	public async Task<IReadOnlyList<Routine>> GetByUserAsync(string userId, CancellationToken ct = default)
@@ -25,13 +25,31 @@ public sealed class EfRoutineRepository : IRoutineRepository
 			.OrderBy(r => r.CreatedAt)
 			.ToListAsync(ct);
 
-	public async Task<bool> ExistsByNameAsync(string userId, string name, CancellationToken ct = default)
+	public async Task<bool> ExistsByNameAsync(string userId, string name, Guid? excludeId = null, CancellationToken ct = default)
 		=> await _db.Routines
-			.AnyAsync(r => r.UserId == userId && r.Name == new Name(name), ct);
+			.AnyAsync(r => r.UserId == userId
+				&& r.Name == new Name(name)
+				&& (!excludeId.HasValue || r.Id != excludeId.Value), ct);
 
 	public async Task AddAsync(Routine routine, CancellationToken ct = default)
 	{
 		_db.Routines.Add(routine);
+		await _db.SaveChangesAsync(ct);
+	}
+
+	public async Task<Routine?> GetByIdWithSessionsAsync(string userId, Guid id, CancellationToken ct = default)
+	=> await _db.Routines
+		.AsTracking()
+		.Include(r => r.Sessions)
+			.ThenInclude(s => s.Exercises)
+		.FirstOrDefaultAsync(r => r.UserId == userId && r.Id == id, ct);
+
+	public async Task UpdateAsync(Routine routine, CancellationToken ct = default)
+		=> await _db.SaveChangesAsync(ct);
+
+	public async Task DeleteAsync(Routine routine, CancellationToken ct = default)
+	{
+		_db.Routines.Remove(routine);
 		await _db.SaveChangesAsync(ct);
 	}
 }
