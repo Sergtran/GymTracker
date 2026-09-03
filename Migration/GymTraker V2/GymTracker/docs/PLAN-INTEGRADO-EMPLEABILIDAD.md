@@ -52,8 +52,8 @@ Vertical slice completo (ADR-024, ADR-026): DTO + Validator + Repository + Comma
 ### Fase 4 — Feature Workout (semana 4)
 Registrar entrenamiento (series, peso, repeticiones), historial con paginación, cálculo de PR. Aquí se practican queries SQL reales, transacciones e índices (Workouts: `(UserId, WorkoutDate DESC)`).
 
-### Fase 5 — TrainingCycle + Docker (semana 5)
-Iniciar/avanzar/completar ciclo de 4 semanas. Dockerizar la API: Dockerfile + extender docker-compose para levantar API + PostgreSQL juntos con variables de entorno documentadas.
+### Fase 5 — Active Routine + Routine Statistics + Docker (semana 5)
+Rediseño de producto (2026-09-03, decisión final): **se eliminan los ciclos** (`TrainingCycle`/`CompletedTrainingCycle`). El centro es "Mi rutina actual" (una por usuario, en `UserSettings.CurrentRoutineId`) y **todo se deriva de Routine + Workout**: semanas en uso, total de entrenamientos, consistencia semanal, PRs, línea de uso por gaps de fechas. Esta fase practica SQL/LINQ de verdad (COUNT, MIN/MAX, GROUP BY por semana, partición por fechas) sobre los Workouts de la Fase 4. Detalle completo: **docs/REDISENO-TRAININGCYCLE.md**. Dockerizar la API: Dockerfile + extender docker-compose para levantar API + PostgreSQL juntos con variables de entorno documentadas.
 
 ### Fase 6 — CI/CD + Azure (semana 6)
 GitHub Actions: build → tests → publicación. Deploy a Azure App Service + Azure SQL. La app queda accesible por URL.
