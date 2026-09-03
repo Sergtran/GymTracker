@@ -22,10 +22,12 @@ public sealed class CreateWorkoutValidator : AbstractValidator<CreateWorkoutRequ
 			exercise.RuleFor(e => e.Laterality).IsInEnum();
 			exercise.RuleFor(e => e.Sets)
 				.NotEmpty().WithMessage("Cada ejercicio debe tener al menos una serie.");
-		});
 
-		// Validación anidada de series con RuleForEach + SetValidator del tipo de serie
-		RuleForEach(x => x.Exercises.SelectMany(e => e.Sets))
-			.SetValidator(new WorkoutSetValidator());
+			exercise.RuleForEach(e => e.Sets).ChildRules(set =>
+			{
+				set.RuleFor(s => s.Reps).GreaterThanOrEqualTo(0);
+				set.RuleFor(s => s.Weight).GreaterThanOrEqualTo(0);
+			});
+		});
 	}
 }

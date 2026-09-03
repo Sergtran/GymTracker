@@ -41,20 +41,25 @@ public sealed class EfWorkoutRepository : IWorkoutRepository
 		return (items, totalCount);
 	}
 
-	public async Task<decimal?> GetPreviousBestMetricAsync(
-		string userId, string exerciseName, Laterality laterality,
-		ExerciseType type, CancellationToken ct = default)
-	{
-		var sets = _db.Workouts
-			.Where(w => w.UserId == userId)
-			.SelectMany(w => w.Exercises)
-			.Where(e => e.Name == new Name(exerciseName) && e.Laterality == laterality)
-			.SelectMany(e => e.Sets);
+    public async Task<decimal?> GetPreviousBestMetricAsync(
+        string userId, string exerciseName, Laterality laterality,
+        ExerciseType type, CancellationToken ct = default)
+    {
+        var sets = await _db.Workouts
+            .Where(w => w.UserId == userId)
+            .SelectMany(w => w.Exercises)
+            .Where(e => e.Name == new Name(exerciseName) && e.Laterality == laterality)
+            .SelectMany(e => e.Sets)
+            .Select(s => new { Reps = s.Reps, Weight = s.Weight })
+            .ToListAsync(ct);
 
-		return type == ExerciseType.Bodyweight
-			? await sets.MaxAsync(s => (decimal?)s.Reps.Value, ct)
-			: await sets.MaxAsync(s => (decimal?)s.Weight.Value, ct);
-	}
+        if (sets.Count == 0)
+            return null;
+
+        return type == ExerciseType.Bodyweight
+            ? sets.Max(s => (decimal)s.Reps.Value)
+            : sets.Max(s => s.Weight.Value);
+    }
 
 	public async Task AddAsync(Workout workout, CancellationToken ct = default)
 	{
