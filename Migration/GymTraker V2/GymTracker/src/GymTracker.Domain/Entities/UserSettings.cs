@@ -46,6 +46,12 @@ public sealed class UserSettings : Entity
 
 	public string UserId { get; private set; } = string.Empty;
 
+	/// <summary>
+	/// Rutina actual del usuario (una sola por usuario porque UserSettings es 1:1).
+	/// null = sin rutina actual. Toda métrica de uso se deriva de Routine + Workout (ADR-031).
+	/// </summary>
+	public Guid? CurrentRoutineId { get; private set; }
+
 	public Theme Theme { get; private set; }
 
 	public int TimerPrepSeconds { get; private set; }
@@ -57,6 +63,19 @@ public sealed class UserSettings : Entity
 	public int TimerSets { get; private set; }
 
 	#region Behaviors
+
+	public void SetCurrentRoutine(Guid routineId)
+	{
+		if (routineId == Guid.Empty)
+			throw new ArgumentException("RoutineId cannot be empty.", nameof(routineId));
+
+		CurrentRoutineId = routineId;
+	}
+
+	public void ClearCurrentRoutine()
+	{
+		CurrentRoutineId = null;
+	}
 
 	public void SetTheme(Theme theme)
 	{

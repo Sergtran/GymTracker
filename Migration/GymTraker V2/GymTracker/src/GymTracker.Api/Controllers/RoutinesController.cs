@@ -14,17 +14,20 @@ namespace GymTracker.Api.Controllers;
 public class RoutinesController : ControllerBase
 {
 	private readonly IRoutineService _routineService;
+	private readonly IRoutineStatsService _statsService;
 	private readonly IValidator<CreateRoutineRequest> _createValidator;
 	private readonly IValidator<CreateSessionRequest> _sessionValidator;
 	private readonly IValidator<CreateSessionExerciseRequest> _exerciseValidator;
 
 	public RoutinesController(
 		IRoutineService routineService,
+		IRoutineStatsService statsService,
 		IValidator<CreateRoutineRequest> createValidator,
 		IValidator<CreateSessionRequest> sessionValidator,
 		IValidator<CreateSessionExerciseRequest> exerciseValidator)
 	{
 		_routineService = routineService;
+		_statsService = statsService;
 		_createValidator = createValidator;
 		_sessionValidator = sessionValidator;
 		_exerciseValidator = exerciseValidator;
@@ -145,4 +148,23 @@ public class RoutinesController : ControllerBase
 		await _routineService.DeleteExerciseAsync(UserId, routineId, sessionId, exerciseId, ct);
 		return NoContent();
 	}
+
+	[HttpGet("{id:guid}/stats")]
+	[ProducesResponseType(typeof(RoutineStatsDto), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	public async Task<ActionResult<RoutineStatsDto>> GetStats(Guid id, CancellationToken ct)
+		=> Ok(await _statsService.GetRoutineStatsAsync(UserId, id, ct));
+
+	[HttpGet("{id:guid}/usage")]
+	[ProducesResponseType(typeof(RoutineUsageDto), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	public async Task<ActionResult<RoutineUsageDto>> GetUsage(Guid id, CancellationToken ct)
+		=> Ok(await _statsService.GetRoutineUsageAsync(UserId, id, ct));
+
+	[HttpGet("{id:guid}/exercises/top")]
+	[ProducesResponseType(typeof(IReadOnlyList<ExerciseUsageDto>), StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status404NotFound)]
+	public async Task<ActionResult<IReadOnlyList<ExerciseUsageDto>>> GetTopExercises(
+		Guid id, [FromQuery] int limit = 10, CancellationToken ct = default)
+		=> Ok(await _statsService.GetTopExercisesAsync(UserId, id, limit, ct));
 }

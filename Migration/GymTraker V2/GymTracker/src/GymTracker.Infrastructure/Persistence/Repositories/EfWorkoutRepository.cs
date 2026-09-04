@@ -3,6 +3,7 @@ using GymTracker.Domain.Entities;
 using GymTracker.Domain.Enums;
 using GymTracker.Domain.ValueObjects;
 using GymTracker.Infrastructure.Data;
+using GymTracker.Application.Dtos;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymTracker.Infrastructure.Persistence.Repositories;
@@ -65,5 +66,45 @@ public sealed class EfWorkoutRepository : IWorkoutRepository
 	{
 		_db.Workouts.Add(workout);
 		await _db.SaveChangesAsync(ct);
+	}
+
+	public async Task<RoutineWorkoutSummary?> GetRoutineSummaryAsync(
+		string userId, Guid routineId, CancellationToken ct = default)
+	{
+		var query = _db.Workouts.Where(w => w.UserId == userId && w.RoutineId == routineId);
+
+		var count = await query.CountAsync(ct);
+		if (count == 0)
+			return null;
+
+		var first = await query.MinAsync(w => (DateTime?)w.WorkoutDate, ct);
+		var last = await query.MaxAsync(w => (DateTime?)w.WorkoutDate, ct);
+		var prCount = await query
+			.SelectMany(w => w.Exercises)
+			.CountAsync(e => e.PrStatus == PrStatus.New, ct);
+
+		return new RoutineWorkoutSummary(count, first, last, prCount);
+	}
+
+	public async Task<IReadOnlyList<DateTime>> GetWorkoutDatesAsync(
+		string userId, Guid routineId, CancellationToken ct = default)
+		=> await _db.Workouts
+			.Where(w => w.UserId == userId && w.RoutineId == routineId)
+			.Select(w => w.WorkoutDate)
+			.ToListAsync(ct);
+
+	public async Task<IReadOnlyList<ExerciseFrequency>> GetExerciseFrequencyAsync(
+		string userId, Guid routineId, int limit, CancellationToken ct = default)
+	{
+		var rows = await _db.Workouts
+			.Where(w => w.UserId == userId && w.RoutineId == routineId)
+			.SelectMany(w => w.Exercises)
+			.GroupBy(e => e.Name)
+			.OrderByDescending(g => g.Count())
+			.Take(limit)
+			.Select(g => new { Name = g.Key, Count = g.Count() })
+			.ToListAsync(ct);
+
+		return rows.Select(r => new ExerciseFrequency(r.Name.Value, r.Count)).ToList();
 	}
 }

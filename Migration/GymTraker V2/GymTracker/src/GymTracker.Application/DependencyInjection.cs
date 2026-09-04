@@ -12,6 +12,8 @@ public static class DependencyInjection
 		services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 		services.AddScoped<IRoutineService, RoutineService>();
 		services.AddScoped<IWorkoutService, WorkoutService>();
+		services.AddScoped<ICurrentRoutineService, CurrentRoutineService>();
+		services.AddScoped<IRoutineStatsService, RoutineStatsService>();
 		return services;
 	}
 }

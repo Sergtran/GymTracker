@@ -15,8 +15,6 @@ public sealed class GymTrackerDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Routine> Routines { get; set; } = null!;
     public DbSet<Workout> Workouts { get; set; } = null!;
-    public DbSet<TrainingCycle> TrainingCycles { get; set; } = null!;
-    public DbSet<CompletedTrainingCycle> CompletedTrainingCycles { get; set; } = null!;
     public DbSet<ExerciseCatalogEntry> ExerciseCatalogEntries { get; set; } = null!;
     public DbSet<UserSettings> UserSettings { get; set; } = null!;
     public DbSet<ExerciseNote> ExerciseNotes { get; set; } = null!;
@@ -133,38 +131,6 @@ public sealed class GymTrackerDbContext : IdentityDbContext<ApplicationUser>
 			e.ToTable(t => t.HasCheckConstraint("CK_WorkoutSets_Weight_NonNegative", "\"Weight\" >= 0"));
 		});
 
-		// TrainingCycle
-		modelBuilder.Entity<TrainingCycle>(e =>
-		{
-			e.HasIndex(tc => tc.UserId).IsUnique();
-
-			e.HasOne<ApplicationUser>()
-			 .WithMany()
-			 .HasForeignKey(tc => tc.UserId)
-			 .OnDelete(DeleteBehavior.Cascade);
-
-			e.HasOne<Routine>()
-			 .WithMany()
-			 .HasForeignKey(tc => tc.RoutineId)
-			 .OnDelete(DeleteBehavior.Restrict);
-
-			e.ToTable(t => t.HasCheckConstraint("CK_TrainingCycles_CurrentWeek_Range", "\"CurrentWeek\" >= 1 AND \"CurrentWeek\" <= \"TotalWeeks\""));
-		});
-
-		// CompletedTrainingCycle
-		modelBuilder.Entity<CompletedTrainingCycle>(e =>
-		{
-			e.Property(x => x.RoutineName)
-			 .HasConversion(name => name.Value, value => new Name(value))
-			 .HasMaxLength(Routine.MaxNameLength)
-			 .IsRequired();
-
-			e.HasOne<ApplicationUser>()
-			 .WithMany()
-			 .HasForeignKey(x => x.UserId)
-			 .OnDelete(DeleteBehavior.Cascade);
-		});
-
 		// ExerciseCatalogEntry (configuración + seed HasData en clase separada)
 		modelBuilder.ApplyConfiguration(new ExerciseCatalogConfiguration());
 
@@ -214,6 +180,11 @@ public sealed class GymTrackerDbContext : IdentityDbContext<ApplicationUser>
 			 .WithMany()
 			 .HasForeignKey(x => x.UserId)
 			 .OnDelete(DeleteBehavior.Cascade);
+
+			e.HasOne<Routine>()
+			 .WithMany()
+			 .HasForeignKey(x => x.CurrentRoutineId)
+			 .OnDelete(DeleteBehavior.SetNull);
 		});
 
 		// ApplicationUser
